@@ -1,6 +1,14 @@
+/**
+ * @file main.c
+ * @brief System entry point. Initializes hardware and FreeRTOS scheduler.
+ */
 #include "FreeRTOS.h"
 #include "task.h"
-#include "role3.h"
+#include "tasks.h"
+#include "adc.h"
+#include "uart.h"
+#include "led.h"
+#include "switch.h"
 
 
 /* =========================================================
@@ -9,27 +17,11 @@
 
 static void Hardware_Init(void)
 {
-    /*
-     * Hardware initialization will be added later.
-     */
+    UART_Init();
+    ADC_Init();
+    LED_Init();
+    Switch_Init();
 }
-
-
-/* =========================================================
- * TEMPORARY UART FUNCTION
- * ========================================================= */
-
-void Role3_UART_WriteString(const char *text)
-{
-    /*
-     * Temporary function.
-     * Real UART code will be added later.
-     */
-
-    (void)text;
-}
-
-
 /* =========================================================
  * MAIN
  * ========================================================= */
@@ -39,7 +31,7 @@ int main(void)
     Hardware_Init();
 
 
-    if (Role3_Init() != pdPASS)
+    if (Tasks_Init() != pdPASS)
     {
         while (1)
         {
@@ -47,7 +39,7 @@ int main(void)
     }
 
 
-    Role3_LogSend(
+    Tasks_LogSend(
         "Smart Kitchen RTOS Started",
         0
     );
