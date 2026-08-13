@@ -17,6 +17,36 @@
 #define OVERRIDE_TASK_PRIORITY   3
 
 /* ---------------------------------------------------------
+ * Role 1 - Lighting control parameters
+ *
+ * Assumed LDR wiring: 3.3 V -- LDR -- PE3 -- 10k -- GND.
+ * The divider output therefore RISES with illumination, so a reading below
+ * the threshold means the kitchen is dark and the light should come on.
+ * If the divider is built the other way round, set LIGHT_SENSOR_INVERTED to 1
+ * rather than editing the comparison logic.
+ * --------------------------------------------------------- */
+#define LIGHT_SENSOR_INVERTED        0
+#define LIGHT_SAMPLE_PERIOD_MS       500   /* Task 1 control loop period      */
+#define LIGHT_REPORT_EVERY_N_CYCLES  4     /* Telemetry cadence (~2 s)        */
+#define LIGHT_DARK_THRESHOLD_RAW     2000  /* Below this = dark               */
+#define LIGHT_HYSTERESIS_RAW         200   /* Stops flicker at the threshold  */
+
+/*
+ * An LDR can legitimately read at either extreme in full darkness or direct
+ * light, so a single rail reading is not proof of a fault. The reading must
+ * sit exactly on a rail for this many consecutive samples before the sensor
+ * is declared disconnected.
+ */
+#define LIGHT_FAULT_PERSIST_SAMPLES  20    /* 20 x 500 ms = 10 s              */
+
+/* ---------------------------------------------------------
+ * Role 3 / Role 4 - Override switch handling
+ * --------------------------------------------------------- */
+#define SWITCH_DEBOUNCE_MS           40    /* Settle, and catch a dual press  */
+#define SWITCH_RELEASE_POLL_MS       20
+#define SWITCH_STUCK_TIMEOUT_MS      5000  /* Held longer than this = stuck   */
+
+/* ---------------------------------------------------------
  * Role 2 - Oven control and safety parameters
  * Temperatures are in tenths of a degree Celsius (2000 == 200.0 C) so the
  * control task needs no floating point arithmetic.
@@ -60,6 +90,17 @@ typedef enum {
 typedef struct {
     char text[LOG_MESSAGE_SIZE];
 } LogMessage_t;
+
+/*
+ * What the ISR hands to the override task: the state of the switch pins at
+ * the instant of the edge, plus when it happened. The task re-reads the pins
+ * after the debounce delay, so this snapshot is used for timing and ordering
+ * rather than as the final word on which button was pressed.
+ */
+typedef struct {
+    uint32_t   pins;
+    TickType_t tick;
+} SwitchEvent_t;
 
 extern QueueHandle_t xLogQueue;
 extern QueueHandle_t xOverrideQueue;
@@ -111,6 +152,11 @@ BaseType_t Tasks_GetSystemState(SystemMode_t *mode, bool *lightOn, bool *ovenOn)
 /* Latches the manual oven request off (used by the Role 2 safety cut-off). */
 void Tasks_ClearOvenManual(void);
 
-void Tasks_PostButtonEventFromISR(ButtonEvent_t event);
+/*
+ * Called from the Port F ISR with a snapshot of the switch pins. Pushes the
+ * snapshot onto xOverrideQueue and signals xOverrideSemaphore so the override
+ * task wakes immediately.
+ */
+void Tasks_PostSwitchEventFromISR(uint32_t pinSnapshot);
 
 #endif // TASKS_H

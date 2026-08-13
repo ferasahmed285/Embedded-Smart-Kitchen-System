@@ -53,7 +53,14 @@
  * settings.  Your application will certainly need a different value so set this
  * correctly. This is very often, but not always, equal to the main system clock
  * frequency. */
-#define configCPU_CLOCK_HZ    ( ( unsigned long ) 20000000 )
+/*
+ * The TM4C123GH6PM boots from the 16 MHz precision internal oscillator and
+ * system_TM4C123.c has CLOCK_SETUP set to 0, so SystemInit() leaves that
+ * default in place: the core really runs at 16 MHz. This value must match, or
+ * every SysTick reload - and therefore every vTaskDelay in the system - is
+ * scaled by the ratio of the two numbers.
+ */
+#define configCPU_CLOCK_HZ    ( ( unsigned long ) 16000000 )
 
 /* configSYSTICK_CLOCK_HZ is an optional parameter for ARM Cortex-M ports only.
  *
@@ -136,7 +143,13 @@
  *
  * Defining configTICK_TYPE_WIDTH_IN_BITS as TICK_TYPE_WIDTH_64_BITS causes
  * TickType_t to be defined (typedef'ed) as an unsigned 64-bit type. */
-#define configTICK_TYPE_WIDTH_IN_BITS              TICK_TYPE_WIDTH_64_BITS
+/*
+ * 32 bits is the natural width for a Cortex-M4. A 64-bit tick forces every
+ * tick comparison in the kernel through a software 64-bit path for no benefit
+ * here: at 100 Hz a 32-bit tick counter still runs for 497 days before it
+ * wraps, and FreeRTOS handles the wrap correctly.
+ */
+#define configTICK_TYPE_WIDTH_IN_BITS              TICK_TYPE_WIDTH_32_BITS
 
 /* Set configIDLE_SHOULD_YIELD to 1 to have the Idle task yield to an
  * application task if there is an Idle priority (priority 0) application task
@@ -287,7 +300,21 @@
  * or heap_4.c are included in the build.  This value is defaulted to 4096 bytes
  * but it must be tailored to each application.  Note the heap will appear in
  * the .bss section.  See https://www.freertos.org/a00111.html. */
-#define configTOTAL_HEAP_SIZE                        4096
+/*
+ * Sizing for this application (heap_1, so nothing is ever returned):
+ *   4 application tasks x 256 words stack ...... 4096 bytes
+ *   4 TCBs ..................................... ~ 400 bytes
+ *   idle task stack + TCB ...................... ~ 620 bytes
+ *   log queue      (10 x 80 bytes) ............. ~ 880 bytes
+ *   override queue (10 x 8 bytes) .............. ~ 160 bytes
+ *   3 mutexes / semaphores ..................... ~ 240 bytes
+ *   -------------------------------------------------------
+ *   total ...................................... ~ 6.4 KB
+ * 12 KB leaves headroom for extra logging without approaching the 32 KB of
+ * SRAM on the device. The original 4096 could not fit the four task stacks
+ * alone, so xTaskCreate failed and main() spun in its error loop.
+ */
+#define configTOTAL_HEAP_SIZE                        12288
 
 /* Set configAPPLICATION_ALLOCATED_HEAP to 1 to have the application allocate
  * the array used as the FreeRTOS heap.  Set to 0 to have the linker allocate
@@ -339,7 +366,7 @@
  * function for any set to 1.  See https://www.freertos.org/a00016.html. */
 #define configUSE_IDLE_HOOK                   0
 #define configUSE_TICK_HOOK                   0
-#define configUSE_MALLOC_FAILED_HOOK          0
+#define configUSE_MALLOC_FAILED_HOOK          1
 #define configUSE_DAEMON_TASK_STARTUP_HOOK    0
 
 /* Set configUSE_SB_COMPLETED_CALLBACK to 1 to have send and receive completed
