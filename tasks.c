@@ -8,6 +8,7 @@
 #include "adc.h"
 #include "led.h"
 #include <string.h>
+#include <stdio.h>
 
 /* =========================================================
  * RTOS OBJECTS
@@ -80,6 +81,9 @@ void Tasks_UserOverride(void *pvParameters)
     ButtonEvent_t event;
     (void)pvParameters;
 
+    /* Initialize mode state on boot based on physical wire */
+    globalSystemMode = (GPIO_PORTB_DATA_R & 0x01) ? SYSTEM_MODE_MANUAL : SYSTEM_MODE_AUTO;
+
     for (;;)
     {
         if (xSemaphoreTake(xOverrideSemaphore, portMAX_DELAY) == pdTRUE)
@@ -88,9 +92,13 @@ void Tasks_UserOverride(void *pvParameters)
             {
                 if (xSemaphoreTake(xStateMutex, portMAX_DELAY) == pdTRUE)
                 {
-                    if (event == EVENT_TOGGLE_MODE) {
-                        globalSystemMode = (globalSystemMode == SYSTEM_MODE_AUTO) ? SYSTEM_MODE_MANUAL : SYSTEM_MODE_AUTO;
-                        Tasks_LogSend((globalSystemMode == SYSTEM_MODE_AUTO) ? "SYSTEM: AUTO MODE" : "SYSTEM: MANUAL MODE", 0);
+                    if (event == EVENT_UPDATE_MODE) {
+                        bool isManual = (GPIO_PORTB_DATA_R & 0x01);
+                        SystemMode_t newMode = isManual ? SYSTEM_MODE_MANUAL : SYSTEM_MODE_AUTO;
+                        if (globalSystemMode != newMode) {
+                            globalSystemMode = newMode;
+                            Tasks_LogSend((globalSystemMode == SYSTEM_MODE_AUTO) ? "SYSTEM: AUTO MODE" : "SYSTEM: MANUAL MODE", 0);
+                        }
                     }
                     else if (event == EVENT_TOGGLE_LIGHT) {
                         if (globalSystemMode == SYSTEM_MODE_MANUAL) {
@@ -183,7 +191,7 @@ void Tasks_LightingControl(void *pvParameters) {
 void Tasks_OvenControl(void *pvParameters) {
     (void)pvParameters;
     bool ovenIsOn = false;
-    const float OVEN_TARGET_TEMP = 200.0f; 
+    const float OVEN_TARGET_TEMP = 30.0f; /* 30 C (Easy to reach with thumb heat) */
     const float FAULT_TEMP_MAX = 300.0f; 
     const float FAULT_TEMP_MIN = -20.0f; 
     
@@ -218,6 +226,15 @@ void Tasks_OvenControl(void *pvParameters) {
             ovenIsOn = turnOn;
             if (turnOn) Tasks_LogSend("OVEN ELEMENT: ON", 0);
             else        Tasks_LogSend("OVEN ELEMENT: OFF", 0);
+        }
+
+        /* Continuous Temperature Logging (Every 1 second) */
+        static int printCounter = 0;
+        if (++printCounter >= 2) {
+            char tempMsg[40];
+            snprintf(tempMsg, sizeof(tempMsg), "CURRENT TEMP: %d C", (int)currentTemp);
+            Tasks_LogSend(tempMsg, 0);
+            printCounter = 0;
         }
 
         LED_SetOvenElement(ovenIsOn);

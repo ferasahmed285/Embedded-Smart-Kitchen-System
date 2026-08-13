@@ -9,9 +9,11 @@
 #define SYSCTL_RCGCGPIO_R  (*((volatile unsigned long *)0x400FE608))
 #define SYSCTL_RCGCADC_R   (*((volatile unsigned long *)0x400FE638))
 
-/* GPIO E for AIN0 (PE3) and AIN1 (PE2) */
+/* GPIO E for AIN0 (PE3) and PE1 (Disconnect Simulator) */
+#define GPIO_PORTE_DATA_R  (*((volatile unsigned long *)0x400243FC))
 #define GPIO_PORTE_DIR_R   (*((volatile unsigned long *)0x40024400))
 #define GPIO_PORTE_AFSEL_R (*((volatile unsigned long *)0x40024420))
+#define GPIO_PORTE_PUR_R   (*((volatile unsigned long *)0x40024510))
 #define GPIO_PORTE_DEN_R   (*((volatile unsigned long *)0x4002451C))
 #define GPIO_PORTE_AMSEL_R (*((volatile unsigned long *)0x40024528))
 
@@ -34,14 +36,8 @@
 /* ================= TEMP CONVERT ================= */
 static float ConvertTemp(int adc)
 {
-    /* 
-     * The PDF states the thermal sensor must be physically wired.
-     * Assuming an LM35 external temperature sensor as an example:
-     * LM35 outputs 10mV per degree Celsius.
-     * Vref = 3.3V, ADC Resolution = 4096 (12-bit)
-     * Temp (C) = (ADC * 3.3 / 4096) / 0.010 = (ADC * 330.0) / 4096.0
-     */
-    return (330.0f * (float)adc) / 4096.0f;
+    /* Using Tiva C internal temperature sensor */
+    return 147.5f - ((75.0f * 3.3f * (float)adc) / 4096.0f);
 }
 
 /* ================= INIT ADC ================= */
@@ -52,11 +48,18 @@ void ADC_Init(void)
     SYSCTL_RCGCGPIO_R |= 0x10; 
     for(volatile int i=0; i<1000; i++); 
 
-    /* 2. Configure PE2 (AIN1) and PE3 (AIN0) for analog inputs */
-    GPIO_PORTE_DIR_R &= ~0x0C;     /* PE2, PE3 as inputs */
-    GPIO_PORTE_AFSEL_R |= 0x0C;    /* Enable alt function on PE2, PE3 */
-    GPIO_PORTE_DEN_R &= ~0x0C;     /* Disable digital I/O on PE2, PE3 */
-    GPIO_PORTE_AMSEL_R |= 0x0C;    /* Enable analog function on PE2, PE3 */
+    /* 2. Configure PE3 (AIN0) for analog input (Light Sensor) */
+    GPIO_PORTE_DIR_R &= ~0x08;     
+    GPIO_PORTE_AFSEL_R |= 0x08;    
+    GPIO_PORTE_DEN_R &= ~0x08;     
+    GPIO_PORTE_AMSEL_R |= 0x08;    
+
+    /* 2b. Configure PE1 as a digital input with pull-up to simulate sensor disconnect */
+    GPIO_PORTE_DIR_R &= ~(1 << 1);    /* PE1 as input */
+    GPIO_PORTE_AFSEL_R &= ~(1 << 1);  /* Disable alt function on PE1 */
+    GPIO_PORTE_AMSEL_R &= ~(1 << 1);  /* Disable analog on PE1 */
+    GPIO_PORTE_PUR_R |= (1 << 1);     /* Enable pull-up resistor on PE1 */
+    GPIO_PORTE_DEN_R |= (1 << 1);     /* Enable digital I/O on PE1 */
 
     /* 3. Disable SS2 and SS3 before config */
     ADC0_ACTSS_R &= ~((1 << 2) | (1 << 3));
@@ -64,9 +67,9 @@ void ADC_Init(void)
     /* 4. Software trigger for both (default 0x0 in EMUX) */
     ADC0_EMUX_R &= ~0xFF00;
 
-    /* 5. Config SS3 for External Temperature Sensor (AIN1) */
-    ADC0_SSMUX3_R = 1;               /* Channel 1 (AIN1/PE2) */
-    ADC0_SSCTL3_R = (1<<1) | (1<<2); /* IE0, END0 (No TS0 since it's external) */
+    /* 5. Config SS3 for Internal Temperature Sensor */
+    ADC0_SSMUX3_R = 0;
+    ADC0_SSCTL3_R = (1<<1) | (1<<2) | (1<<3); /* IE0, END0, TS0 */
 
     /* 6. Config SS2 for LDR/Light Sensor (AIN0) */
     ADC0_SSMUX2_R = 0;               /* Channel 0 (AIN0/PE3) */
@@ -89,6 +92,12 @@ uint32_t ADC_ReadLightSensor(void)
 /* ================= READ TEMP ================= */
 float ADC_ReadTemperatureSensor(void)
 {
+    /* Simulate a sensor disconnect if a jumper wire is pulled out of PE1 */
+    if (GPIO_PORTE_DATA_R & (1 << 1)) {
+        /* Wire pulled out! PE1 is HIGH due to pull-up resistor. Simulate fault. */
+        return 999.0f;
+    }
+
     ADC0_PSSI_R = (1 << 3);                   /* Initiate SS3 */
     while((ADC0_RIS_R & (1 << 3)) == 0);      /* Wait for conversion */
     uint32_t raw_adc = ADC0_SSFIFO3_R & 0xFFF;/* Read result */
