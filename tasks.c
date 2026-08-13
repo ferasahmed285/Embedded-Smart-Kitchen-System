@@ -5,6 +5,8 @@
  */
 #include "tasks.h"
 #include "uart.h"
+#include "adc.h"
+#include "led.h"
 #include <string.h>
 
 /* =========================================================
@@ -19,8 +21,9 @@ SemaphoreHandle_t xOverrideSemaphore = NULL;
 /* =========================================================
  * SHARED SYSTEM STATE
  * ========================================================= */
-static OverrideMode_t lightOverrideMode = OVERRIDE_AUTO;
-static OverrideMode_t ovenOverrideMode = OVERRIDE_AUTO;
+static SystemMode_t globalSystemMode = SYSTEM_MODE_AUTO;
+static bool manualLightOn = false;
+static bool manualOvenOn = false;
 
 /* =========================================================
  * INITIALIZATION
@@ -28,7 +31,7 @@ static OverrideMode_t ovenOverrideMode = OVERRIDE_AUTO;
 BaseType_t Tasks_Init(void)
 {
     xLogQueue = xQueueCreate(LOG_QUEUE_LENGTH, sizeof(LogMessage_t));
-    xOverrideQueue = xQueueCreate(OVERRIDE_QUEUE_LENGTH, sizeof(OverrideEvent_t));
+    xOverrideQueue = xQueueCreate(OVERRIDE_QUEUE_LENGTH, sizeof(ButtonEvent_t));
     xStateMutex = xSemaphoreCreateMutex();
     xUARTMutex = xSemaphoreCreateMutex();
     xOverrideSemaphore = xSemaphoreCreateCounting(OVERRIDE_QUEUE_LENGTH, 0);
@@ -74,7 +77,7 @@ BaseType_t Tasks_LogSend(const char *message, TickType_t timeout)
  * ========================================================= */
 void Tasks_UserOverride(void *pvParameters)
 {
-    OverrideEvent_t event;
+    ButtonEvent_t event;
     (void)pvParameters;
 
     for (;;)
@@ -85,25 +88,27 @@ void Tasks_UserOverride(void *pvParameters)
             {
                 if (xSemaphoreTake(xStateMutex, portMAX_DELAY) == pdTRUE)
                 {
-                    if (event.source == OVERRIDE_LIGHT)
-                        lightOverrideMode = event.mode;
-                    else if (event.source == OVERRIDE_OVEN)
-                        ovenOverrideMode = event.mode;
-                        
+                    if (event == EVENT_TOGGLE_MODE) {
+                        globalSystemMode = (globalSystemMode == SYSTEM_MODE_AUTO) ? SYSTEM_MODE_MANUAL : SYSTEM_MODE_AUTO;
+                        Tasks_LogSend((globalSystemMode == SYSTEM_MODE_AUTO) ? "SYSTEM: AUTO MODE" : "SYSTEM: MANUAL MODE", 0);
+                    }
+                    else if (event == EVENT_TOGGLE_LIGHT) {
+                        if (globalSystemMode == SYSTEM_MODE_MANUAL) {
+                            manualLightOn = !manualLightOn;
+                            Tasks_LogSend(manualLightOn ? "MANUAL LIGHT: ON" : "MANUAL LIGHT: OFF", 0);
+                        } else {
+                            Tasks_LogSend("REJECTED: CANNOT TOGGLE LIGHT IN AUTO MODE", 0);
+                        }
+                    }
+                    else if (event == EVENT_TOGGLE_OVEN) {
+                        if (globalSystemMode == SYSTEM_MODE_MANUAL) {
+                            manualOvenOn = !manualOvenOn;
+                            Tasks_LogSend(manualOvenOn ? "MANUAL OVEN: ON" : "MANUAL OVEN: OFF", 0);
+                        } else {
+                            Tasks_LogSend("REJECTED: CANNOT TOGGLE OVEN IN AUTO MODE", 0);
+                        }
+                    }
                     xSemaphoreGive(xStateMutex);
-                }
-
-                if (event.source == OVERRIDE_LIGHT)
-                {
-                    if (event.mode == OVERRIDE_AUTO) Tasks_LogSend("LIGHT OVERRIDE: AUTO", 0);
-                    else if (event.mode == OVERRIDE_FORCE_ON) Tasks_LogSend("LIGHT OVERRIDE: FORCE ON", 0);
-                    else if (event.mode == OVERRIDE_FORCE_OFF) Tasks_LogSend("LIGHT OVERRIDE: FORCE OFF", 0);
-                }
-                else if (event.source == OVERRIDE_OVEN)
-                {
-                    if (event.mode == OVERRIDE_AUTO) Tasks_LogSend("OVEN OVERRIDE: AUTO", 0);
-                    else if (event.mode == OVERRIDE_FORCE_ON) Tasks_LogSend("OVEN OVERRIDE: FORCE ON", 0);
-                    else if (event.mode == OVERRIDE_FORCE_OFF) Tasks_LogSend("OVEN OVERRIDE: FORCE OFF", 0);
                 }
             }
         }
@@ -137,9 +142,38 @@ void Tasks_UARTLogging(void *pvParameters)
  * ========================================================= */
 void Tasks_LightingControl(void *pvParameters) {
     (void)pvParameters;
+    bool lightIsOn = false;
+    const uint32_t LIGHT_THRESHOLD = 2000; 
+    
     for(;;) {
-        // Lighting logic
-        vTaskDelay(pdMS_TO_TICKS(100));
+        uint32_t lightLevel = ADC_ReadLightSensor();
+        SystemMode_t mode;
+        bool lightManual;
+        bool ovenManual;
+        Tasks_GetSystemState(&mode, &lightManual, &ovenManual);
+        
+        bool turnOn = false;
+
+        if (mode == SYSTEM_MODE_MANUAL) {
+            turnOn = lightManual;
+        } else {
+            /* AUTO mode: turn on if dark */
+            if (lightLevel > LIGHT_THRESHOLD) {
+                turnOn = true;
+            } else {
+                turnOn = false;
+            }
+        }
+
+        /* State change logging */
+        if (turnOn != lightIsOn) {
+            lightIsOn = turnOn;
+            if (turnOn) Tasks_LogSend("KITCHEN LIGHT: ON", 0);
+            else        Tasks_LogSend("KITCHEN LIGHT: OFF", 0);
+        }
+
+        LED_SetKitchenLight(lightIsOn);
+        vTaskDelay(pdMS_TO_TICKS(500)); 
     }
 }
 
@@ -148,54 +182,72 @@ void Tasks_LightingControl(void *pvParameters) {
  * ========================================================= */
 void Tasks_OvenControl(void *pvParameters) {
     (void)pvParameters;
+    bool ovenIsOn = false;
+    const float OVEN_TARGET_TEMP = 200.0f; 
+    const float FAULT_TEMP_MAX = 300.0f; 
+    const float FAULT_TEMP_MIN = -20.0f; 
+    
     for(;;) {
-        // Oven logic
-        vTaskDelay(pdMS_TO_TICKS(100));
+        float currentTemp = ADC_ReadTemperatureSensor();
+        SystemMode_t mode;
+        bool lightManual;
+        bool ovenManual;
+        Tasks_GetSystemState(&mode, &lightManual, &ovenManual);
+        
+        bool turnOn = false;
+
+        /* Role 4 Hardware Fault Detection */
+        if (currentTemp > FAULT_TEMP_MAX || currentTemp < FAULT_TEMP_MIN) {
+            Tasks_LogSend("FAULT: OVEN TEMP SENSOR INVALID. OVEN FORCED OFF.", 0);
+            turnOn = false; 
+        } else {
+            if (mode == SYSTEM_MODE_MANUAL) {
+                turnOn = ovenManual;
+            } else {
+                /* AUTO mode */
+                if (currentTemp < OVEN_TARGET_TEMP) {
+                    turnOn = true;
+                } else {
+                    turnOn = false;
+                }
+            }
+        }
+
+        /* State change logging */
+        if (turnOn != ovenIsOn) {
+            ovenIsOn = turnOn;
+            if (turnOn) Tasks_LogSend("OVEN ELEMENT: ON", 0);
+            else        Tasks_LogSend("OVEN ELEMENT: OFF", 0);
+        }
+
+        LED_SetOvenElement(ovenIsOn);
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
 /* =========================================================
- * GETTERS
+ * GETTERS & SETTERS
  * ========================================================= */
-OverrideMode_t Tasks_GetLightOverride(void)
+void Tasks_GetSystemState(SystemMode_t *mode, bool *lightOn, bool *ovenOn)
 {
-    OverrideMode_t mode = OVERRIDE_AUTO;
-    if (xStateMutex == NULL) return OVERRIDE_AUTO;
-
-    if (xSemaphoreTake(xStateMutex, portMAX_DELAY) == pdTRUE)
+    if (xStateMutex != NULL && xSemaphoreTake(xStateMutex, portMAX_DELAY) == pdTRUE)
     {
-        mode = lightOverrideMode;
+        *mode = globalSystemMode;
+        *lightOn = manualLightOn;
+        *ovenOn = manualOvenOn;
         xSemaphoreGive(xStateMutex);
     }
-    return mode;
-}
-
-OverrideMode_t Tasks_GetOvenOverride(void)
-{
-    OverrideMode_t mode = OVERRIDE_AUTO;
-    if (xStateMutex == NULL) return OVERRIDE_AUTO;
-
-    if (xSemaphoreTake(xStateMutex, portMAX_DELAY) == pdTRUE)
-    {
-        mode = ovenOverrideMode;
-        xSemaphoreGive(xStateMutex);
-    }
-    return mode;
 }
 
 /* =========================================================
- * POST OVERRIDE FROM ISR
+ * POST EVENT FROM ISR
  * ========================================================= */
-void Tasks_PostOverrideFromISR(OverrideSource_t source, OverrideMode_t mode)
+void Tasks_PostButtonEventFromISR(ButtonEvent_t event)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    OverrideEvent_t event;
 
     if ((xOverrideQueue == NULL) || (xOverrideSemaphore == NULL))
         return;
-
-    event.source = source;
-    event.mode = mode;
 
     if (xQueueSendFromISR(xOverrideQueue, &event, &xHigherPriorityTaskWoken) == pdPASS)
     {

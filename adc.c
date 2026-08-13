@@ -34,8 +34,14 @@
 /* ================= TEMP CONVERT ================= */
 static float ConvertTemp(int adc)
 {
-    /* Using Tiva C internal temperature sensor for now */
-    return 147.5f - ((75.0f * 3.3f * (float)adc) / 4096.0f);
+    /* 
+     * The PDF states the thermal sensor must be physically wired.
+     * Assuming an LM35 external temperature sensor as an example:
+     * LM35 outputs 10mV per degree Celsius.
+     * Vref = 3.3V, ADC Resolution = 4096 (12-bit)
+     * Temp (C) = (ADC * 3.3 / 4096) / 0.010 = (ADC * 330.0) / 4096.0
+     */
+    return (330.0f * (float)adc) / 4096.0f;
 }
 
 /* ================= INIT ADC ================= */
@@ -46,11 +52,11 @@ void ADC_Init(void)
     SYSCTL_RCGCGPIO_R |= 0x10; 
     for(volatile int i=0; i<1000; i++); 
 
-    /* 2. Configure PE3 (AIN0) for analog input (Light Sensor) */
-    GPIO_PORTE_DIR_R &= ~0x08;     /* PE3 as input */
-    GPIO_PORTE_AFSEL_R |= 0x08;    /* Enable alt function on PE3 */
-    GPIO_PORTE_DEN_R &= ~0x08;     /* Disable digital I/O on PE3 */
-    GPIO_PORTE_AMSEL_R |= 0x08;    /* Enable analog function on PE3 */
+    /* 2. Configure PE2 (AIN1) and PE3 (AIN0) for analog inputs */
+    GPIO_PORTE_DIR_R &= ~0x0C;     /* PE2, PE3 as inputs */
+    GPIO_PORTE_AFSEL_R |= 0x0C;    /* Enable alt function on PE2, PE3 */
+    GPIO_PORTE_DEN_R &= ~0x0C;     /* Disable digital I/O on PE2, PE3 */
+    GPIO_PORTE_AMSEL_R |= 0x0C;    /* Enable analog function on PE2, PE3 */
 
     /* 3. Disable SS2 and SS3 before config */
     ADC0_ACTSS_R &= ~((1 << 2) | (1 << 3));
@@ -58,9 +64,9 @@ void ADC_Init(void)
     /* 4. Software trigger for both (default 0x0 in EMUX) */
     ADC0_EMUX_R &= ~0xFF00;
 
-    /* 5. Config SS3 for Internal Temperature Sensor */
-    ADC0_SSMUX3_R = 0;
-    ADC0_SSCTL3_R = (1<<1) | (1<<2) | (1<<3); /* IE0, END0, TS0 */
+    /* 5. Config SS3 for External Temperature Sensor (AIN1) */
+    ADC0_SSMUX3_R = 1;               /* Channel 1 (AIN1/PE2) */
+    ADC0_SSCTL3_R = (1<<1) | (1<<2); /* IE0, END0 (No TS0 since it's external) */
 
     /* 6. Config SS2 for LDR/Light Sensor (AIN0) */
     ADC0_SSMUX2_R = 0;               /* Channel 0 (AIN0/PE3) */
