@@ -161,15 +161,30 @@ void Tasks_LightingControl(void *pvParameters) {
         Tasks_GetSystemState(&mode, &lightManual, &ovenManual);
         
         bool turnOn = false;
+        static bool wasInFault = false;
 
-        if (mode == SYSTEM_MODE_MANUAL) {
-            turnOn = lightManual;
+        /* Hardware Fault Detection: If LDR is unplugged, ADC reads ~0 (pulled down by 10k) or ~4095 (short) */
+        if (lightLevel > 4090 || lightLevel < 10) {
+            if (!wasInFault) {
+                Tasks_LogSend("FAULT: LIGHT SENSOR DISCONNECTED. LIGHT FORCED OFF.", 0);
+                wasInFault = true;
+            }
+            turnOn = false;
         } else {
-            /* AUTO mode: turn on if dark */
-            if (lightLevel > LIGHT_THRESHOLD) {
-                turnOn = true;
+            if (wasInFault) {
+                Tasks_LogSend("SYSTEM: LIGHT SENSOR FAULT CLEARED.", 0);
+                wasInFault = false;
+            }
+
+            if (mode == SYSTEM_MODE_MANUAL) {
+                turnOn = lightManual;
             } else {
-                turnOn = false;
+                /* AUTO mode: turn on if dark */
+                if (lightLevel > LIGHT_THRESHOLD) {
+                    turnOn = true;
+                } else {
+                    turnOn = false;
+                }
             }
         }
 
@@ -203,12 +218,21 @@ void Tasks_OvenControl(void *pvParameters) {
         Tasks_GetSystemState(&mode, &lightManual, &ovenManual);
         
         bool turnOn = false;
+        static bool wasInFault = false;
 
         /* Role 4 Hardware Fault Detection */
         if (currentTemp > FAULT_TEMP_MAX || currentTemp < FAULT_TEMP_MIN) {
-            Tasks_LogSend("FAULT: OVEN TEMP SENSOR INVALID. OVEN FORCED OFF.", 0);
+            if (!wasInFault) {
+                Tasks_LogSend("FAULT: OVEN TEMP SENSOR INVALID. OVEN FORCED OFF.", 0);
+                wasInFault = true;
+            }
             turnOn = false; 
         } else {
+            if (wasInFault) {
+                Tasks_LogSend("SYSTEM: FAULT CLEARED.", 0);
+                wasInFault = false;
+            }
+
             if (mode == SYSTEM_MODE_MANUAL) {
                 turnOn = ovenManual;
             } else {
