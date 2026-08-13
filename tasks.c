@@ -8,7 +8,6 @@
 #include "adc.h"
 #include "led.h"
 #include <string.h>
-#include <stdio.h>
 
 /* =========================================================
  * RTOS OBJECTS
@@ -73,6 +72,144 @@ BaseType_t Tasks_LogSend(const char *message, TickType_t timeout)
     return xQueueSend(xLogQueue, &logMessage, timeout);
 }
 
+/*
+ * Minimal formatting primitives. Each appends at 'pos' and returns the new
+ * write position, never writing past 'cap - 1' so the buffer stays terminated.
+ */
+static size_t Log_AppendStr(char *dst, size_t cap, size_t pos, const char *src)
+{
+    if (src == NULL) return pos;
+
+    while ((*src != '\0') && (pos < (cap - 1)))
+    {
+        dst[pos++] = *src++;
+    }
+
+    dst[pos] = '\0';
+    return pos;
+}
+
+static size_t Log_AppendUInt(char *dst, size_t cap, size_t pos, uint32_t value,
+                             uint8_t minDigits)
+{
+    char digits[12];
+    uint8_t count = 0;
+
+    /* Extract the least significant digit first, then emit reversed. */
+    do
+    {
+        digits[count++] = (char)('0' + (value % 10u));
+        value /= 10u;
+    } while ((value != 0u) && (count < sizeof(digits)));
+
+    /* Zero pad the fractional field, so 5 hundredths prints ".05" not ".5". */
+    while ((count < minDigits) && (count < sizeof(digits)))
+    {
+        digits[count++] = '0';
+    }
+
+    while ((count > 0u) && (pos < (cap - 1)))
+    {
+        dst[pos++] = digits[--count];
+    }
+
+    dst[pos] = '\0';
+    return pos;
+}
+
+BaseType_t Tasks_LogSendNum(const char *label, int32_t value, uint8_t decimals,
+                            const char *unit, TickType_t timeout)
+{
+    char line[LOG_MESSAGE_SIZE];
+    uint32_t magnitude;
+    uint32_t scale = 1u;
+    uint8_t i;
+    size_t pos = 0;
+
+    for (i = 0; i < decimals; i++)
+    {
+        scale *= 10u;
+    }
+
+    pos = Log_AppendStr(line, sizeof(line), pos, label);
+    pos = Log_AppendStr(line, sizeof(line), pos, ": ");
+
+    if (value < 0)
+    {
+        pos = Log_AppendStr(line, sizeof(line), pos, "-");
+        magnitude = (uint32_t)(-value);
+    }
+    else
+    {
+        magnitude = (uint32_t)value;
+    }
+
+    pos = Log_AppendUInt(line, sizeof(line), pos, magnitude / scale, 1);
+
+    if (decimals > 0u)
+    {
+        pos = Log_AppendStr(line, sizeof(line), pos, ".");
+        pos = Log_AppendUInt(line, sizeof(line), pos, magnitude % scale, decimals);
+    }
+
+    (void)Log_AppendStr(line, sizeof(line), pos, unit);
+
+    return Tasks_LogSend(line, timeout);
+}
+
+void Tasks_LogCritical(const char *message)
+{
+    /*
+     * Safety alerts must reach PuTTY even when the log queue is full, so they
+     * are written straight to the peripheral. xUARTMutex is what makes that
+     * safe: the logging task may be part way through a string when this call
+     * arrives. If the mutex cannot be acquired promptly the alert is emitted
+     * anyway, because garbled output beats a silent thermal fault.
+     */
+    BaseType_t haveMutex = pdFALSE;
+
+    if (xUARTMutex != NULL)
+    {
+        haveMutex = xSemaphoreTake(xUARTMutex, pdMS_TO_TICKS(50));
+    }
+
+    UART_SendString(message);
+    UART_SendString("\r\n");
+
+    if (haveMutex == pdTRUE)
+    {
+        xSemaphoreGive(xUARTMutex);
+    }
+}
+
+/*
+ * A mechanically stuck or badly bouncing switch produces a burst of edges far
+ * faster than a person can press it. Counting events in a short sliding window
+ * lets the override handler reject the burst instead of thrashing the heating
+ * element. The count resets as soon as a normally spaced press arrives, so a
+ * healthy switch is never locked out.
+ */
+static bool Oven_SwitchIsStuck(void)
+{
+    static TickType_t lastEventTick = 0;
+    static uint32_t burstCount = 0;
+
+    TickType_t now = xTaskGetTickCount();
+
+    if ((now - lastEventTick) < OVEN_SWITCH_WINDOW_TICKS)
+    {
+        burstCount++;
+    }
+    else
+    {
+        burstCount = 1;
+    }
+
+    lastEventTick = now;
+
+    return (burstCount >= OVEN_SWITCH_STUCK_EVENTS);
+}
+
 /* =========================================================
  * TASK: USER OVERRIDE (Task 3)
  * ========================================================= */
@@ -109,7 +246,11 @@ void Tasks_UserOverride(void *pvParameters)
                         }
                     }
                     else if (event == EVENT_TOGGLE_OVEN) {
-                        if (globalSystemMode == SYSTEM_MODE_MANUAL) {
+                        /* Role 2: reject bursts too fast to be a human press. */
+                        if (Oven_SwitchIsStuck()) {
+                            Tasks_LogSend("FAULT: OVEN OVERRIDE SWITCH BOUNCING - EVENT IGNORED", 0);
+                        }
+                        else if (globalSystemMode == SYSTEM_MODE_MANUAL) {
                             manualOvenOn = !manualOvenOn;
                             Tasks_LogSend(manualOvenOn ? "MANUAL OVEN: ON" : "MANUAL OVEN: OFF", 0);
                         } else {
@@ -203,79 +344,183 @@ void Tasks_LightingControl(void *pvParameters) {
 /* =========================================================
  * TASK: OVEN CONTROL (Task 2)
  * ========================================================= */
-void Tasks_OvenControl(void *pvParameters) {
+void Tasks_OvenControl(void *pvParameters)
+{
+    bool ovenIsOn = false;      /* Last command sent to the heating element   */
+    bool inFault = false;       /* Latched sensor fault, for edge logging     */
+    bool overTemp = false;      /* Latched critical cut-off, for edge logging */
+    uint32_t cyclesSinceReport = 0;
+
     (void)pvParameters;
-    bool ovenIsOn = false;
-    const float OVEN_TARGET_TEMP = 30.0f; /* 30 C (Easy to reach with thumb heat) */
-    const float FAULT_TEMP_MAX = 300.0f; 
-    const float FAULT_TEMP_MIN = -20.0f; 
-    
-    for(;;) {
-        float currentTemp = ADC_ReadTemperatureSensor();
+
+    for (;;)
+    {
         SystemMode_t mode;
         bool lightManual;
         bool ovenManual;
-        Tasks_GetSystemState(&mode, &lightManual, &ovenManual);
-        
+        int32_t tempTenths;
+        bool sensorFault;
         bool turnOn = false;
-        static bool wasInFault = false;
 
-        /* Role 4 Hardware Fault Detection */
-        if (currentTemp > FAULT_TEMP_MAX || currentTemp < FAULT_TEMP_MIN) {
-            if (!wasInFault) {
-                Tasks_LogSend("FAULT: OVEN TEMP SENSOR INVALID. OVEN FORCED OFF.", 0);
-                wasInFault = true;
+        /* ---- 1. Sample the thermal sensor ------------------------------ */
+        tempTenths = ADC_ReadTemperatureTenths();
+        sensorFault = (tempTenths == ADC_TEMP_TENTHS_INVALID);
+
+        Tasks_GetSystemState(&mode, &lightManual, &ovenManual);
+
+        /* ---- 2. Decide the element state ------------------------------- */
+        if (sensorFault)
+        {
+            /*
+             * Highest precedence: with no trustworthy temperature the element
+             * is unconditionally de-energised, and the manual request is
+             * latched off so that reconnecting the sensor cannot silently
+             * restart heating.
+             */
+            turnOn = false;
+
+            if (!inFault)
+            {
+                inFault = true;
+                Tasks_ClearOvenManual();
+                Tasks_LogCritical("FAULT: OVEN TEMP SENSOR INVALID - ELEMENT FORCED OFF");
             }
-            turnOn = false; 
-        } else {
-            if (wasInFault) {
-                Tasks_LogSend("SYSTEM: FAULT CLEARED.", 0);
-                wasInFault = false;
+        }
+        else
+        {
+            if (inFault)
+            {
+                inFault = false;
+                Tasks_LogSend("SYSTEM: OVEN SENSOR FAULT CLEARED", 0);
             }
 
-            if (mode == SYSTEM_MODE_MANUAL) {
-                turnOn = ovenManual;
-            } else {
-                /* AUTO mode */
-                if (currentTemp < OVEN_TARGET_TEMP) {
-                    turnOn = true;
-                } else {
-                    turnOn = false;
+            if (tempTenths >= OVEN_CRITICAL_TENTHS)
+            {
+                /*
+                 * Critical cut-off. This deliberately outranks the manual
+                 * override. The specification lets the user command the
+                 * element regardless of the sensor, but it also requires the
+                 * element to be disabled once the threshold is exceeded.
+                 * Safety wins: previously MANUAL mode assigned the element
+                 * state straight from the switch with no temperature test at
+                 * all, so the element could be held on at any temperature.
+                 */
+                turnOn = false;
+
+                if (!overTemp)
+                {
+                    overTemp = true;
+                    Tasks_ClearOvenManual();
+                    Tasks_LogCritical("CRITICAL: OVEN OVER TEMPERATURE - ELEMENT FORCED OFF");
+                    Tasks_LogSendNum("CRITICAL TEMP", tempTenths, 1, " C", 0);
+                }
+            }
+            else if (overTemp && (tempTenths > (OVEN_CRITICAL_TENTHS - OVEN_HYSTERESIS_TENTHS)))
+            {
+                /* Still inside the critical band, stay latched off. */
+                turnOn = false;
+            }
+            else
+            {
+                if (overTemp)
+                {
+                    overTemp = false;
+                    Tasks_LogSend("SYSTEM: OVEN TEMPERATURE BACK IN RANGE", 0);
+                }
+
+                if (mode == SYSTEM_MODE_MANUAL)
+                {
+                    /* Manual override, still fenced by both checks above. */
+                    turnOn = ovenManual;
+                }
+                else
+                {
+                    /*
+                     * AUTO mode with hysteresis: heat until the setpoint is
+                     * reached, then stay off until the temperature has fallen
+                     * a full band below it. Without the band the element and
+                     * its log line toggle on every sample while sitting at
+                     * the threshold.
+                     */
+                    if (ovenIsOn)
+                    {
+                        turnOn = (tempTenths < OVEN_SETPOINT_TENTHS);
+                    }
+                    else
+                    {
+                        turnOn = (tempTenths < (OVEN_SETPOINT_TENTHS - OVEN_HYSTERESIS_TENTHS));
+                    }
                 }
             }
         }
 
-        /* State change logging */
-        if (turnOn != ovenIsOn) {
+        /* ---- 3. Drive the actuator ------------------------------------- */
+        LED_SetOvenElement(turnOn);
+
+        /* ---- 4. Report ------------------------------------------------- */
+        if (turnOn != ovenIsOn)
+        {
             ovenIsOn = turnOn;
-            if (turnOn) Tasks_LogSend("OVEN ELEMENT: ON", 0);
-            else        Tasks_LogSend("OVEN ELEMENT: OFF", 0);
+            Tasks_LogSend(turnOn ? "OVEN ELEMENT: ON" : "OVEN ELEMENT: OFF", 0);
         }
 
-        /* Continuous Temperature Logging (Every 1 second) */
-        static int printCounter = 0;
-        if (++printCounter >= 2) {
-            char tempMsg[40];
-            snprintf(tempMsg, sizeof(tempMsg), "CURRENT TEMP: %d C", (int)currentTemp);
-            Tasks_LogSend(tempMsg, 0);
-            printCounter = 0;
+        /* Continuous temperature logging, once per second. */
+        if (++cyclesSinceReport >= OVEN_REPORT_EVERY_N_CYCLES)
+        {
+            cyclesSinceReport = 0;
+
+            if (!sensorFault)
+            {
+                Tasks_LogSendNum("CURRENT TEMP", tempTenths, 1, " C", 0);
+            }
         }
 
-        LED_SetOvenElement(ovenIsOn);
-        vTaskDelay(pdMS_TO_TICKS(500));
+        vTaskDelay(pdMS_TO_TICKS(OVEN_SAMPLE_PERIOD_MS));
     }
 }
 
 /* =========================================================
  * GETTERS & SETTERS
  * ========================================================= */
-void Tasks_GetSystemState(SystemMode_t *mode, bool *lightOn, bool *ovenOn)
+BaseType_t Tasks_GetSystemState(SystemMode_t *mode, bool *lightOn, bool *ovenOn)
 {
+    /*
+     * Fail-safe defaults are written first. If the mutex is unavailable the
+     * caller still receives a defined, safe state instead of whatever
+     * happened to be on its stack.
+     */
+    *mode = SYSTEM_MODE_AUTO;
+    *lightOn = false;
+    *ovenOn = false;
+
+    if (xStateMutex == NULL)
+    {
+        return pdFALSE;
+    }
+
+    if (xSemaphoreTake(xStateMutex, portMAX_DELAY) != pdTRUE)
+    {
+        return pdFALSE;
+    }
+
+    *mode = globalSystemMode;
+    *lightOn = manualLightOn;
+    *ovenOn = manualOvenOn;
+    xSemaphoreGive(xStateMutex);
+
+    return pdTRUE;
+}
+
+void Tasks_ClearOvenManual(void)
+{
+    /*
+     * Called by the oven safety cut-offs. Without this latch the manual
+     * request would survive the fault and re-energise the element as soon as
+     * the temperature dropped back into range.
+     */
     if (xStateMutex != NULL && xSemaphoreTake(xStateMutex, portMAX_DELAY) == pdTRUE)
     {
-        *mode = globalSystemMode;
-        *lightOn = manualLightOn;
-        *ovenOn = manualOvenOn;
+        manualOvenOn = false;
         xSemaphoreGive(xStateMutex);
     }
 }
