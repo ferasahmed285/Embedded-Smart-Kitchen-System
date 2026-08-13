@@ -4,6 +4,7 @@
  * @note Role 2 and Role 4 responsibilities.
  */
 #include "adc.h"
+#include <stdbool.h>
 
 /* ================= REGISTERS ================= */
 #define SYSCTL_RCGCGPIO_R  (*((volatile unsigned long *)0x400FE608))
@@ -33,11 +34,45 @@
 #define ADC0_SSCTL2_R  (*((volatile unsigned long *)0x40038084))
 #define ADC0_SSFIFO2_R (*((volatile unsigned long *)0x40038088))
 
+/*
+ * Upper bound on the end-of-conversion poll. A software triggered conversion
+ * finishes in a few microseconds, so reaching this count means the peripheral
+ * is faulty. Bounding the wait stops a dead ADC from hanging the calling task
+ * forever, which an unbounded 'while' would do.
+ */
+#define ADC_WAIT_LIMIT  100000u
+
 /* ================= TEMP CONVERT ================= */
-static float ConvertTemp(int adc)
+
+/*
+ * Tiva C internal temperature sensor, from the TM4C123 datasheet:
+ *   Temp(C)     = 147.5 - (75 * 3.3 * ADC) / 4096
+ *   Temp(0.1 C) = 1475  - (2475 * ADC) / 4096
+ *
+ * Note the negative slope: a HIGHER ADC code means a LOWER temperature. The
+ * integer form is used by the oven control task so its safety comparisons do
+ * not depend on floating point rounding. At the maximum code of 4095 the
+ * intermediate product is about 10.1 million, well inside int32.
+ */
+static int32_t ConvertTempTenths(uint32_t adc)
 {
-    /* Using Tiva C internal temperature sensor */
-    return 147.5f - ((75.0f * 3.3f * (float)adc) / 4096.0f);
+    return 1475 - (int32_t)((2475u * adc) / 4096u);
+}
+
+/* Polls the given sample sequencer's completion flag with a bounded wait. */
+static bool ADC_WaitForConversion(uint32_t ssMask)
+{
+    uint32_t guard = ADC_WAIT_LIMIT;
+
+    while ((ADC0_RIS_R & ssMask) == 0)
+    {
+        if (--guard == 0u)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /* ================= INIT ADC ================= */
@@ -82,26 +117,57 @@ void ADC_Init(void)
 /* ================= READ LIGHT ================= */
 uint32_t ADC_ReadLightSensor(void)
 {
+    uint32_t result;
+
     ADC0_PSSI_R = (1 << 2);                   /* Initiate SS2 */
-    while((ADC0_RIS_R & (1 << 2)) == 0);      /* Wait for conversion */
-    uint32_t result = ADC0_SSFIFO2_R & 0xFFF; /* Read result */
+
+    if (!ADC_WaitForConversion(1 << 2))       /* Bounded wait for conversion */
+    {
+        /*
+         * Report a rail value so the lighting task's existing disconnect
+         * check treats a dead ADC as a sensor fault rather than as darkness.
+         */
+        return 0u;
+    }
+
+    result = ADC0_SSFIFO2_R & 0xFFF;          /* Read result */
     ADC0_ISC_R = (1 << 2);                    /* Clear flag */
     return result;
 }
 
 /* ================= READ TEMP ================= */
-float ADC_ReadTemperatureSensor(void)
+int32_t ADC_ReadTemperatureTenths(void)
 {
-    /* Simulate a sensor disconnect if a jumper wire is pulled out of PE1 */
-    if (GPIO_PORTE_DATA_R & (1 << 1)) {
-        /* Wire pulled out! PE1 is HIGH due to pull-up resistor. Simulate fault. */
-        return 999.0f;
+    uint32_t raw_adc;
+
+    /* Simulate a sensor disconnect if the jumper wire is pulled out of PE1. */
+    if (GPIO_PORTE_DATA_R & (1 << 1))
+    {
+        /* Wire pulled out: PE1 is HIGH because of the pull-up. */
+        return ADC_TEMP_TENTHS_INVALID;
     }
 
     ADC0_PSSI_R = (1 << 3);                   /* Initiate SS3 */
-    while((ADC0_RIS_R & (1 << 3)) == 0);      /* Wait for conversion */
-    uint32_t raw_adc = ADC0_SSFIFO3_R & 0xFFF;/* Read result */
+
+    if (!ADC_WaitForConversion(1 << 3))       /* Bounded wait for conversion */
+    {
+        return ADC_TEMP_TENTHS_INVALID;
+    }
+
+    raw_adc = ADC0_SSFIFO3_R & 0xFFF;         /* Read result */
     ADC0_ISC_R = (1 << 3);                    /* Clear flag */
-    
-    return ConvertTemp(raw_adc);
+
+    return ConvertTempTenths(raw_adc);
+}
+
+float ADC_ReadTemperatureSensor(void)
+{
+    int32_t tenths = ADC_ReadTemperatureTenths();
+
+    if (tenths == ADC_TEMP_TENTHS_INVALID)
+    {
+        return ADC_TEMP_FAULT_C;
+    }
+
+    return (float)tenths / 10.0f;
 }
