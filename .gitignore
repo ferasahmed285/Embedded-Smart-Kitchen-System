@@ -53,3 +53,17 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Keil MDK / uVision Specific
+Objects/
+Listings/
+*.uvoptx
+*.uvguix.*
+*.bak
+*.dep
+*.build_log.htm
+*.htm
+*.lnp
+*.axf
+*.crf
+*.plg
