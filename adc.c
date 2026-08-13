@@ -4,6 +4,7 @@
  * @note Role 2 and Role 4 responsibilities.
  */
 #include "adc.h"
+#include <stdbool.h>
 
 /* ================= REGISTERS ================= */
 #define SYSCTL_RCGCGPIO_R  (*((volatile unsigned long *)0x400FE608))
@@ -31,17 +32,48 @@
 #define ADC0_SSCTL2_R  (*((volatile unsigned long *)0x40038084))
 #define ADC0_SSFIFO2_R (*((volatile unsigned long *)0x40038088))
 
+/*
+ * Upper bound on the end-of-conversion poll. A software triggered conversion
+ * completes in a few microseconds, so this loop count is several orders of
+ * magnitude longer than the worst case; reaching it means the peripheral is
+ * faulty. Bounding the wait stops a dead ADC from hanging the task forever
+ * (the original unbounded 'while' would have frozen the whole subsystem).
+ */
+#define ADC_WAIT_LIMIT  100000u
+
 /* ================= TEMP CONVERT ================= */
-static float ConvertTemp(int adc)
+
+/*
+ * LM35 outputs 10 mV per degree Celsius.
+ * Vref = 3.3 V, ADC resolution = 4096 (12-bit).
+ *   Temp(C)      = (raw * 3.3 / 4096) / 0.010
+ *   Temp(0.1 C)  = (raw * 3300) / 4096
+ * raw is at most 4095, so the intermediate product stays well inside int32.
+ */
+int32_t ADC_RawToTenths(uint32_t raw)
 {
-    /* 
-     * The PDF states the thermal sensor must be physically wired.
-     * Assuming an LM35 external temperature sensor as an example:
-     * LM35 outputs 10mV per degree Celsius.
-     * Vref = 3.3V, ADC Resolution = 4096 (12-bit)
-     * Temp (C) = (ADC * 3.3 / 4096) / 0.010 = (ADC * 330.0) / 4096.0
-     */
-    return (330.0f * (float)adc) / 4096.0f;
+    if (raw == ADC_RAW_INVALID)
+    {
+        return ADC_TEMP_TENTHS_INVALID;
+    }
+
+    return (int32_t)((raw * 3300u) / 4096u);
+}
+
+/* Polls the given sample sequencer's completion flag with a bounded wait. */
+static bool ADC_WaitForConversion(uint32_t ssMask)
+{
+    uint32_t guard = ADC_WAIT_LIMIT;
+
+    while ((ADC0_RIS_R & ssMask) == 0)
+    {
+        if (--guard == 0u)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /* ================= INIT ADC ================= */
@@ -79,20 +111,43 @@ void ADC_Init(void)
 /* ================= READ LIGHT ================= */
 uint32_t ADC_ReadLightSensor(void)
 {
+    uint32_t result;
+
     ADC0_PSSI_R = (1 << 2);                   /* Initiate SS2 */
-    while((ADC0_RIS_R & (1 << 2)) == 0);      /* Wait for conversion */
-    uint32_t result = ADC0_SSFIFO2_R & 0xFFF; /* Read result */
+
+    if (!ADC_WaitForConversion(1 << 2))       /* Bounded wait for conversion */
+    {
+        return ADC_RAW_INVALID;
+    }
+
+    result = ADC0_SSFIFO2_R & 0xFFF;          /* Read result */
     ADC0_ISC_R = (1 << 2);                    /* Clear flag */
     return result;
 }
 
 /* ================= READ TEMP ================= */
+uint32_t ADC_ReadTemperatureRaw(void)
+{
+    uint32_t raw_adc;
+
+    ADC0_PSSI_R = (1 << 3);                   /* Initiate SS3 */
+
+    if (!ADC_WaitForConversion(1 << 3))       /* Bounded wait for conversion */
+    {
+        return ADC_RAW_INVALID;
+    }
+
+    raw_adc = ADC0_SSFIFO3_R & 0xFFF;         /* Read result */
+    ADC0_ISC_R = (1 << 3);                    /* Clear flag */
+    return raw_adc;
+}
+
+int32_t ADC_ReadTemperatureTenths(void)
+{
+    return ADC_RawToTenths(ADC_ReadTemperatureRaw());
+}
+
 float ADC_ReadTemperatureSensor(void)
 {
-    ADC0_PSSI_R = (1 << 3);                   /* Initiate SS3 */
-    while((ADC0_RIS_R & (1 << 3)) == 0);      /* Wait for conversion */
-    uint32_t raw_adc = ADC0_SSFIFO3_R & 0xFFF;/* Read result */
-    ADC0_ISC_R = (1 << 3);                    /* Clear flag */
-    
-    return ConvertTemp(raw_adc);
+    return (float)ADC_ReadTemperatureTenths() / 10.0f;
 }
