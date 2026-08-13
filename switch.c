@@ -1,26 +1,26 @@
 /**
  * @file switch.c
- * @brief GPIO and Interrupt configuration for system buttons.
- * @note Role 4 hardware integration. Uses Port F (PF4, PF0) onboard switches.
+ * @brief GPIO and Interrupt configuration for system buttons and mode jumper wire.
+ * @note Role 4 hardware integration. Uses Port F (PF4, PF0) and Port B (PB0).
  */
 #include "switch.h"
 #include "tasks.h" 
 #include "inc/tm4c123gh6pm.h"
 
 /* Pin Bitmasks */
-#define PIN_SW2    (1 << 0) /* PF0 (SW2) */
-#define PIN_SW1    (1 << 4) /* PF4 (SW1) */
+#define PIN_SW2    (1 << 0) /* PF0 */
+#define PIN_SW1    (1 << 4) /* PF4 */
 #define SWITCH_PINS (PIN_SW1 | PIN_SW2)
+#define PIN_MODE   (1 << 0) /* PB0 */
 
 void Switch_Init(void)
 {
-    SYSCTL_RCGCGPIO_R |= 0x20; /* Enable Port F clock */
+    SYSCTL_RCGCGPIO_R |= 0x20 | 0x02; /* Enable Port F and Port B */
     for(volatile int i=0; i<1000; i++);
 
-    /* Unlock PF0 for SW2 */
+    /* 1. Configure Port F (Onboard SW1 and SW2) */
     GPIO_PORTF_LOCK_R = 0x4C4F434B;
-    GPIO_PORTF_CR_R |= PIN_SW2;
-
+    GPIO_PORTF_CR_R |= SWITCH_PINS;
     GPIO_PORTF_AMSEL_R &= ~SWITCH_PINS;
     GPIO_PORTF_PCTL_R &= ~0x000F000F;
     GPIO_PORTF_DIR_R &= ~SWITCH_PINS;
@@ -34,32 +34,47 @@ void Switch_Init(void)
     GPIO_PORTF_ICR_R = SWITCH_PINS;
     GPIO_PORTF_IM_R |= SWITCH_PINS;
 
-    /* Priority 5 for IRQ 30 (Port F). NVIC_PRI7_R bits 23:21 */
+    /* 2. Configure Port B (Mode Jumper Wire on PB0) */
+    GPIO_PORTB_AMSEL_R &= ~PIN_MODE;
+    GPIO_PORTB_PCTL_R &= ~0x0000000F;
+    GPIO_PORTB_DIR_R &= ~PIN_MODE;
+    GPIO_PORTB_AFSEL_R &= ~PIN_MODE;
+    GPIO_PORTB_PUR_R |= PIN_MODE;
+    GPIO_PORTB_DEN_R |= PIN_MODE;
+
+    GPIO_PORTB_IS_R &= ~PIN_MODE;
+    GPIO_PORTB_IBE_R |= PIN_MODE; /* Interrupt on BOTH edges (insert/remove) */
+    GPIO_PORTB_ICR_R = PIN_MODE;
+    GPIO_PORTB_IM_R |= PIN_MODE;
+
+    /* Priority 5 for IRQ 30 (Port F) and IRQ 1 (Port B) */
     NVIC_PRI7_R = (NVIC_PRI7_R & 0xFF0FFFFF) | (5 << 21);
-    NVIC_EN0_R |= (1 << 30); /* Enable IRQ 30 */
+    NVIC_PRI0_R = (NVIC_PRI0_R & 0xFFFF0FFF) | (5 << 13);
+    NVIC_EN0_R |= (1 << 30) | (1 << 1); 
 }
 
 void GPIOF_Handler(void)
 {
-    /* Wait briefly to allow human to press both buttons simultaneously */
-    for(volatile int i=0; i<150000; i++); 
+    /* Debounce */
+    for(volatile int i=0; i<50000; i++); 
 
-    /* Read actual physical state of the pins (active low) */
-    uint32_t data = GPIO_PORTF_DATA_R;
-    bool sw1_pressed = ((data & PIN_SW1) == 0);
-    bool sw2_pressed = ((data & PIN_SW2) == 0);
-
-    /* Simultaneous press logic */
-    if (sw1_pressed && sw2_pressed) {
-        Tasks_PostButtonEventFromISR(EVENT_TOGGLE_MODE);
-    }
-    else if (sw1_pressed) {
+    if (GPIO_PORTF_RIS_R & PIN_SW1) {
         Tasks_PostButtonEventFromISR(EVENT_TOGGLE_LIGHT);
+        GPIO_PORTF_ICR_R = PIN_SW1;
     }
-    else if (sw2_pressed) {
+    if (GPIO_PORTF_RIS_R & PIN_SW2) {
         Tasks_PostButtonEventFromISR(EVENT_TOGGLE_OVEN);
+        GPIO_PORTF_ICR_R = PIN_SW2;
     }
+}
 
-    /* Clear all switch interrupts to prevent cascading triggers */
-    GPIO_PORTF_ICR_R = SWITCH_PINS; 
+void GPIOB_Handler(void)
+{
+    /* Debounce insertion/removal of jumper wire */
+    for(volatile int i=0; i<50000; i++); 
+    
+    if (GPIO_PORTB_RIS_R & PIN_MODE) {
+        Tasks_PostButtonEventFromISR(EVENT_UPDATE_MODE);
+        GPIO_PORTB_ICR_R = PIN_MODE;
+    }
 }

@@ -21,7 +21,7 @@
 #define LOG_MESSAGE_SIZE         80
 
 typedef enum {
-    EVENT_TOGGLE_MODE = 0,
+    EVENT_UPDATE_MODE = 0,
     EVENT_TOGGLE_LIGHT,
     EVENT_TOGGLE_OVEN
 } ButtonEvent_t;

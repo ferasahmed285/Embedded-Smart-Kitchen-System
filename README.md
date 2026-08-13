@@ -33,14 +33,20 @@
 ## Hardware Wiring & Pin Mapping (Role 4 & 5 Reference)
 This section defines the physical hardware connections required on the TM4C123 Launchpad for the project.
 
-### Sensors (Analog Inputs)
-* **Ambient Light Sensor (LDR)**: Connect to **PE3 (AIN0)**.
-* **Oven Temperature Sensor (e.g., LM35)**: Connect to **PE2 (AIN1)**.
+### Sensors (Analog Inputs & Simulators)
+* **Ambient Light Sensor (LDR)**: Connect to **PE3 (AIN0)** using a **Voltage Divider** circuit:
+  * Connect **Leg 1** of the LDR to **3.3V (VCC)**.
+  * Connect **Leg 2** of the LDR to both **PE3** AND to one end of a **10kΩ Resistor**.
+  * Connect the other end of the 10kΩ Resistor to **GND**.
+* **Oven Temperature Sensor**: Utilizes the Tiva C **Internal Temperature Sensor**.
+* **Simulated Disconnect Wire (Fault Testing)**: Plug a jumper wire from **PE1** to **GND**. When you pull this wire out during the video demo, the system will instantly simulate a "disconnected sensor" fault and force the oven off!
 
 ### User Inputs (Digital Switch Interrupts)
+* **Master Mode Switch (Auto/Manual)**: Plug a jumper wire from **PB0** to **GND**. 
+  * Plugged In = **Auto Mode**
+  * Unplugged = **Manual Mode**
 * **Kitchen Light Toggle Switch**: **PF4** (Onboard **SW1**). (Note: Only functions in Manual mode).
 * **Oven Toggle Switch**: **PF0** (Onboard **SW2**). (Note: Only functions in Manual mode).
-* **Master Mode Switch (Auto/Manual)**: Press **SW1** and **SW2** exactly at the same time to toggle between Automatic and Manual modes.
 
 ### Actuators (Digital Outputs)
 * **Kitchen Light Actuator (LED)**: Connect to **PF3** (Can use onboard **Green LED**).
