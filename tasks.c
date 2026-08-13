@@ -7,6 +7,7 @@
 #include "uart.h"
 #include "adc.h"
 #include "led.h"
+#include "switch.h"
 #include <string.h>
 
 /* =========================================================
@@ -31,7 +32,7 @@ static bool manualOvenOn = false;
 BaseType_t Tasks_Init(void)
 {
     xLogQueue = xQueueCreate(LOG_QUEUE_LENGTH, sizeof(LogMessage_t));
-    xOverrideQueue = xQueueCreate(OVERRIDE_QUEUE_LENGTH, sizeof(ButtonEvent_t));
+    xOverrideQueue = xQueueCreate(OVERRIDE_QUEUE_LENGTH, sizeof(SwitchEvent_t));
     xStateMutex = xSemaphoreCreateMutex();
     xUARTMutex = xSemaphoreCreateMutex();
     xOverrideSemaphore = xSemaphoreCreateCounting(OVERRIDE_QUEUE_LENGTH, 0);
@@ -217,47 +218,177 @@ static bool Oven_SwitchIsStuck(void)
 /* =========================================================
  * TASK: USER OVERRIDE (Task 3)
  * ========================================================= */
+/* Applies one classified override event. Returns the line to log. */
+static const char *Override_Apply(ButtonEvent_t event)
+{
+    const char *message = NULL;
+
+    /*
+     * The mutex is held only for the state update itself. Logging happens
+     * after it is released, so the highest priority task in the system never
+     * holds the shared state lock across a queue operation.
+     */
+    if (xSemaphoreTake(xStateMutex, portMAX_DELAY) != pdTRUE)
+    {
+        return "ERROR: STATE LOCK UNAVAILABLE";
+    }
+
+    switch (event)
+    {
+        case EVENT_TOGGLE_MODE:
+            globalSystemMode = (globalSystemMode == SYSTEM_MODE_AUTO)
+                             ? SYSTEM_MODE_MANUAL : SYSTEM_MODE_AUTO;
+            message = (globalSystemMode == SYSTEM_MODE_AUTO)
+                    ? "SYSTEM: AUTO MODE" : "SYSTEM: MANUAL MODE";
+            break;
+
+        case EVENT_TOGGLE_LIGHT:
+            if (globalSystemMode == SYSTEM_MODE_MANUAL)
+            {
+                manualLightOn = !manualLightOn;
+                message = manualLightOn ? "MANUAL LIGHT: ON" : "MANUAL LIGHT: OFF";
+            }
+            else
+            {
+                message = "REJECTED: CANNOT TOGGLE LIGHT IN AUTO MODE";
+            }
+            break;
+
+        case EVENT_TOGGLE_OVEN:
+            if (globalSystemMode == SYSTEM_MODE_MANUAL)
+            {
+                manualOvenOn = !manualOvenOn;
+                message = manualOvenOn ? "MANUAL OVEN: ON" : "MANUAL OVEN: OFF";
+            }
+            else
+            {
+                message = "REJECTED: CANNOT TOGGLE OVEN IN AUTO MODE";
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    xSemaphoreGive(xStateMutex);
+    return message;
+}
+
+/*
+ * Waits for both switches to return to the released state.
+ * Returns false if they are still held after SWITCH_STUCK_TIMEOUT_MS, which
+ * is the stuck switch fault the specification asks for.
+ */
+static bool Override_WaitForRelease(void)
+{
+    uint32_t waited = 0;
+
+    while (waited < SWITCH_STUCK_TIMEOUT_MS)
+    {
+        if (Switch_Read() == SWITCH_ALL_PINS)   /* Both lines back high */
+        {
+            return true;
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(SWITCH_RELEASE_POLL_MS));
+        waited += SWITCH_RELEASE_POLL_MS;
+    }
+
+    return false;
+}
+
 void Tasks_UserOverride(void *pvParameters)
 {
-    ButtonEvent_t event;
     (void)pvParameters;
+
+    /*
+     * Switch_Init() enables the Port F interrupt before the RTOS objects
+     * exist. A button pressed in that window reaches an ISR that masks the
+     * interrupt and then finds a NULL queue, so nothing would ever re-arm it.
+     * Re-arming here closes that startup race.
+     */
+    Switch_EnableInterrupts();
 
     for (;;)
     {
-        if (xSemaphoreTake(xOverrideSemaphore, portMAX_DELAY) == pdTRUE)
+        SwitchEvent_t event;
+        uint32_t settled;
+        bool sw1;
+        bool sw2;
+        const char *message = NULL;
+
+        /*
+         * Counting semaphore: the ISR to task event notification. The payload
+         * itself travels through xOverrideQueue, so the semaphore count and
+         * the queue depth stay in step.
+         */
+        if (xSemaphoreTake(xOverrideSemaphore, portMAX_DELAY) != pdTRUE)
         {
-            if (xQueueReceive(xOverrideQueue, &event, 0) == pdPASS)
+            continue;
+        }
+
+        if (xQueueReceive(xOverrideQueue, &event, 0) != pdPASS)
+        {
+            continue;
+        }
+
+        /*
+         * Debounce in the task, not in the ISR. This delay also gives the user
+         * a window in which to complete a two button press: pressing SW1 and
+         * SW2 together within SWITCH_DEBOUNCE_MS is what toggles AUTO/MANUAL.
+         */
+        vTaskDelay(pdMS_TO_TICKS(SWITCH_DEBOUNCE_MS));
+
+        settled = Switch_Read();
+        sw1 = Switch_IsPressed(SWITCH_SW1_PIN, settled);
+        sw2 = Switch_IsPressed(SWITCH_SW2_PIN, settled);
+
+        if (sw1 && sw2)
+        {
+            message = Override_Apply(EVENT_TOGGLE_MODE);
+        }
+        else if (sw1)
+        {
+            message = Override_Apply(EVENT_TOGGLE_LIGHT);
+        }
+        else if (sw2)
+        {
+            /* Role 2: reject bursts too fast to be a human press. */
+            if (Oven_SwitchIsStuck())
             {
-                if (xSemaphoreTake(xStateMutex, portMAX_DELAY) == pdTRUE)
-                {
-                    if (event == EVENT_TOGGLE_MODE) {
-                        globalSystemMode = (globalSystemMode == SYSTEM_MODE_AUTO) ? SYSTEM_MODE_MANUAL : SYSTEM_MODE_AUTO;
-                        Tasks_LogSend((globalSystemMode == SYSTEM_MODE_AUTO) ? "SYSTEM: AUTO MODE" : "SYSTEM: MANUAL MODE", 0);
-                    }
-                    else if (event == EVENT_TOGGLE_LIGHT) {
-                        if (globalSystemMode == SYSTEM_MODE_MANUAL) {
-                            manualLightOn = !manualLightOn;
-                            Tasks_LogSend(manualLightOn ? "MANUAL LIGHT: ON" : "MANUAL LIGHT: OFF", 0);
-                        } else {
-                            Tasks_LogSend("REJECTED: CANNOT TOGGLE LIGHT IN AUTO MODE", 0);
-                        }
-                    }
-                    else if (event == EVENT_TOGGLE_OVEN) {
-                        /* Role 2: manual oven override, with stuck switch rejection. */
-                        if (Oven_SwitchIsStuck()) {
-                            Tasks_LogSend("FAULT: OVEN OVERRIDE SWITCH STUCK - EVENT IGNORED", 0);
-                        }
-                        else if (globalSystemMode == SYSTEM_MODE_MANUAL) {
-                            manualOvenOn = !manualOvenOn;
-                            Tasks_LogSend(manualOvenOn ? "MANUAL OVEN: ON" : "MANUAL OVEN: OFF", 0);
-                        } else {
-                            Tasks_LogSend("REJECTED: CANNOT TOGGLE OVEN IN AUTO MODE", 0);
-                        }
-                    }
-                    xSemaphoreGive(xStateMutex);
-                }
+                message = "FAULT: OVEN OVERRIDE SWITCH BOUNCING - EVENT IGNORED";
+            }
+            else
+            {
+                message = Override_Apply(EVENT_TOGGLE_OVEN);
             }
         }
+        else
+        {
+            /* The line settled high again: the edge was pure contact noise. */
+            message = NULL;
+        }
+
+        if (message != NULL)
+        {
+            Tasks_LogSend(message, 0);
+        }
+
+        if (!Override_WaitForRelease())
+        {
+            Tasks_LogCritical("FAULT: OVERRIDE SWITCH STUCK CLOSED");
+        }
+
+        /*
+         * Discard events that piled up from contact bounce while this one was
+         * being handled, so a single press cannot produce a burst of toggles.
+         */
+        while (xSemaphoreTake(xOverrideSemaphore, 0) == pdTRUE)
+        {
+            (void)xQueueReceive(xOverrideQueue, &event, 0);
+        }
+
+        Switch_EnableInterrupts();
     }
 }
 
@@ -286,40 +417,133 @@ void Tasks_UARTLogging(void *pvParameters)
 /* =========================================================
  * TASK: LIGHTING CONTROL (Task 1)
  * ========================================================= */
-void Tasks_LightingControl(void *pvParameters) {
+void Tasks_LightingControl(void *pvParameters)
+{
+    bool lightIsOn = false;       /* Last command sent to the lamp        */
+    bool inFault = false;         /* Latched fault, for edge logging      */
+    uint32_t railSamples = 0;     /* Consecutive readings stuck on a rail */
+    uint32_t cyclesSinceReport = 0;
+
     (void)pvParameters;
-    bool lightIsOn = false;
-    const uint32_t LIGHT_THRESHOLD = 2000; 
-    
-    for(;;) {
-        uint32_t lightLevel = ADC_ReadLightSensor();
+
+    for (;;)
+    {
         SystemMode_t mode;
         bool lightManual;
         bool ovenManual;
-        Tasks_GetSystemState(&mode, &lightManual, &ovenManual);
-        
+        uint32_t raw;
+        uint32_t level;
+        bool sensorFault;
         bool turnOn = false;
 
-        if (mode == SYSTEM_MODE_MANUAL) {
-            turnOn = lightManual;
-        } else {
-            /* AUTO mode: turn on if dark */
-            if (lightLevel > LIGHT_THRESHOLD) {
-                turnOn = true;
-            } else {
-                turnOn = false;
+        /* ---- 1. Sample the ambient light sensor ------------------------ */
+        raw = ADC_ReadLightSensor();
+
+        /*
+         * Unlike the oven's LM35, an LDR can genuinely read at either rail in
+         * full darkness or direct sunlight, so a single extreme sample is not
+         * evidence of a fault. Only a reading pinned at exactly 0 or 4095 for
+         * LIGHT_FAULT_PERSIST_SAMPLES in a row is treated as a disconnected
+         * or shorted sensor.
+         */
+        if (raw == ADC_RAW_INVALID)
+        {
+            railSamples = LIGHT_FAULT_PERSIST_SAMPLES;  /* ADC itself failed */
+            level = 0;
+        }
+        else
+        {
+            level = raw;
+
+            if ((raw == 0u) || (raw >= 4095u))
+            {
+                if (railSamples < LIGHT_FAULT_PERSIST_SAMPLES)
+                {
+                    railSamples++;
+                }
+            }
+            else
+            {
+                railSamples = 0;
             }
         }
 
-        /* State change logging */
-        if (turnOn != lightIsOn) {
-            lightIsOn = turnOn;
-            if (turnOn) Tasks_LogSend("KITCHEN LIGHT: ON", 0);
-            else        Tasks_LogSend("KITCHEN LIGHT: OFF", 0);
+        sensorFault = (railSamples >= LIGHT_FAULT_PERSIST_SAMPLES);
+
+#if LIGHT_SENSOR_INVERTED
+        level = 4095u - level;
+#endif
+
+        Tasks_GetSystemState(&mode, &lightManual, &ovenManual);
+
+        /* ---- 2. Decide the lamp state ---------------------------------- */
+        if (sensorFault)
+        {
+            /*
+             * Fail safe for lighting is ON. A kitchen left dark because a
+             * sensor failed is the more hazardous outcome, and the lamp draws
+             * no dangerous energy, unlike the oven element which fails OFF.
+             */
+            turnOn = true;
+
+            if (!inFault)
+            {
+                inFault = true;
+                Tasks_LogCritical("FAULT: LIGHT SENSOR INVALID - LAMP FORCED ON");
+            }
+        }
+        else
+        {
+            if (inFault)
+            {
+                inFault = false;
+                Tasks_LogSend("RECOVERED: LIGHT SENSOR VALID", 0);
+            }
+
+            if (mode == SYSTEM_MODE_MANUAL)
+            {
+                turnOn = lightManual;
+            }
+            else
+            {
+                /*
+                 * AUTO mode with hysteresis: switch on once the room is darker
+                 * than the threshold, and only switch off again once it is
+                 * clearly brighter, so passing shadows cannot make the lamp
+                 * flicker at every sample.
+                 */
+                if (lightIsOn)
+                {
+                    turnOn = (level < (LIGHT_DARK_THRESHOLD_RAW + LIGHT_HYSTERESIS_RAW));
+                }
+                else
+                {
+                    turnOn = (level < LIGHT_DARK_THRESHOLD_RAW);
+                }
+            }
         }
 
-        LED_SetKitchenLight(lightIsOn);
-        vTaskDelay(pdMS_TO_TICKS(500)); 
+        /* ---- 3. Drive the actuator ------------------------------------- */
+        LED_SetKitchenLight(turnOn);
+
+        /* ---- 4. Report ------------------------------------------------- */
+        if (turnOn != lightIsOn)
+        {
+            lightIsOn = turnOn;
+            Tasks_LogSend(turnOn ? "KITCHEN LIGHT: ON" : "KITCHEN LIGHT: OFF", 0);
+        }
+
+        if (++cyclesSinceReport >= LIGHT_REPORT_EVERY_N_CYCLES)
+        {
+            cyclesSinceReport = 0;
+
+            if (!sensorFault)
+            {
+                Tasks_LogSendNum("LIGHT LEVEL", (int32_t)level, 0, " raw", 0);
+            }
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(LIGHT_SAMPLE_PERIOD_MS));
     }
 }
 
@@ -523,17 +747,26 @@ void Tasks_ClearOvenManual(void)
 /* =========================================================
  * POST EVENT FROM ISR
  * ========================================================= */
-void Tasks_PostButtonEventFromISR(ButtonEvent_t event)
+void Tasks_PostSwitchEventFromISR(uint32_t pinSnapshot)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    SwitchEvent_t event;
 
     if ((xOverrideQueue == NULL) || (xOverrideSemaphore == NULL))
         return;
 
+    event.pins = pinSnapshot;
+    event.tick = xTaskGetTickCountFromISR();
+
+    /*
+     * The semaphore is only given when the payload was actually queued, so the
+     * count can never run ahead of the number of events waiting to be read.
+     */
     if (xQueueSendFromISR(xOverrideQueue, &event, &xHigherPriorityTaskWoken) == pdPASS)
     {
         xSemaphoreGiveFromISR(xOverrideSemaphore, &xHigherPriorityTaskWoken);
     }
 
+    /* Task 3 runs at the highest priority, so switch to it on ISR exit. */
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
