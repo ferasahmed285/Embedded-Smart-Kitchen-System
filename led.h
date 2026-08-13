@@ -3,8 +3,19 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/**
+ * @brief Initializes the GPIO pins used for the Oven and Kitchen Light indicators.
+ */
 void LED_Init(void);
-void LED_SetKitchenLight(bool state);
-void LED_SetOvenHeatingElement(bool state);
+
+/**
+ * @brief Turns the Kitchen Light indicator ON or OFF.
+ */
+void LED_SetKitchenLight(bool on);
+
+/**
+ * @brief Turns the Oven Heating Element indicator ON or OFF.
+ */
+void LED_SetOvenElement(bool on);
 
 #endif // LED_H

@@ -29,3 +29,22 @@
 * Compiles the complete technical report in one PDF file, including the abstract, body, individual contributions, and references.
 * Draws the flow charts for the main program flow and generates the wiring diagrams based on Role 4's circuit.
 * Edits the raw footage provided by Role 4 into the final 5-minute video demo explaining the project's work, and uploads it to an online server.
+
+## Hardware Wiring & Pin Mapping (Role 4 & 5 Reference)
+This section defines the physical hardware connections required on the TM4C123 Launchpad for the project.
+
+### Sensors (Analog Inputs)
+* **Ambient Light Sensor (LDR)**: Connect to **PE3 (AIN0)**.
+* **Oven Temperature Sensor (e.g., LM35)**: Connect to **PE2 (AIN1)**.
+
+### User Inputs (Digital Switch Interrupts)
+* **Kitchen Light Toggle Switch**: **PF4** (Onboard **SW1**). (Note: Only functions in Manual mode).
+* **Oven Toggle Switch**: **PF0** (Onboard **SW2**). (Note: Only functions in Manual mode).
+* **Master Mode Switch (Auto/Manual)**: Press **SW1** and **SW2** exactly at the same time to toggle between Automatic and Manual modes.
+
+### Actuators (Digital Outputs)
+* **Kitchen Light Actuator (LED)**: Connect to **PF3** (Can use onboard **Green LED**).
+* **Oven Heating Element (LED)**: Connect to **PF1** (Can use onboard **Red LED**).
+
+### Serial Communication (UART)
+* **PuTTY Logging Terminal**: Uses **UART0** on **PA0 (RX)** and **PA1 (TX)**. This is automatically routed through the Launchpad's USB debug cable (9600 Baud, 8 Data Bits, 1 Stop Bit, No Parity).
