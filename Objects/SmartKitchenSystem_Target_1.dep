@@ -1,128 +1,0 @@
-Dependencies for Project 'SmartKitchenSystem', Target 'Target_1': (DO NOT MODIFY !)
-CompilerVersion: 6220000::V6.22::ARMCLANG
-F (.\main.c)(0x6A7CC9D9)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__EVAL -gdwarf-4 -O0 -ffunction-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I C:/ti/TivaWare_C_Series-2.1.4.178 -I C:/ti/TivaWare_C_Series-2.1.4.178/inc-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-D__UVISION_VERSION="541" -DTM4C123GH6PM -D_RTE_ -D__FPU_PRESENT-o ./objects/main.o -MMD)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\FreeRTOS.h)(0x6A734CF1)
-I (RTE\RTOS\FreeRTOSConfig.h)(0x6A7CC2E9)
-I (C:\ti\TivaWare_C_Series-2.1.4.178\inc\tm4c123gh6pm.h)(0x6A7399F0)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\projdefs.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\portable.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\deprecated_definitions.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\portable\GCC\ARM_CM4F\portmacro.h)(0x6A734CF2)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\mpu_wrappers.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\task.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\list.h)(0x6A734CF1)
-I (tasks.h)(0x6A7CC698)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\queue.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\semphr.h)(0x6A734CF1)
-I (adc.h)(0x6A7CC83E)
-I (uart.h)(0x6A7CC8EE)
-I (led.h)(0x6A7CC56A)
-I (switch.h)(0x6A7CC984)
-F (.\adc.c)(0x6A7CC9D6)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__EVAL -gdwarf-4 -O0 -ffunction-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I C:/ti/TivaWare_C_Series-2.1.4.178 -I C:/ti/TivaWare_C_Series-2.1.4.178/inc-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-D__UVISION_VERSION="541" -DTM4C123GH6PM -D_RTE_ -D__FPU_PRESENT-o ./objects/adc.o -MMD)
-I (adc.h)(0x6A7CC83E)
-F (.\adc.h)(0x6A7CC83E)()
-F (.\led.c)(0x6A7CC56C)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__EVAL -gdwarf-4 -O0 -ffunction-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I C:/ti/TivaWare_C_Series-2.1.4.178 -I C:/ti/TivaWare_C_Series-2.1.4.178/inc-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-D__UVISION_VERSION="541" -DTM4C123GH6PM -D_RTE_ -D__FPU_PRESENT-o ./objects/led.o -MMD)
-I (led.h)(0x6A7CC56A)
-F (.\led.h)(0x6A7CC56A)()
-F (.\switch.c)(0x6A7CCA1A)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__EVAL -gdwarf-4 -O0 -ffunction-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I C:/ti/TivaWare_C_Series-2.1.4.178 -I C:/ti/TivaWare_C_Series-2.1.4.178/inc-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-D__UVISION_VERSION="541" -DTM4C123GH6PM -D_RTE_ -D__FPU_PRESENT-o ./objects/switch.o -MMD)
-I (switch.h)(0x6A7CC984)
-I (tasks.h)(0x6A7CC698)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\FreeRTOS.h)(0x6A734CF1)
-I (RTE\RTOS\FreeRTOSConfig.h)(0x6A7CC2E9)
-I (C:\ti\TivaWare_C_Series-2.1.4.178\inc\tm4c123gh6pm.h)(0x6A7399F0)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\projdefs.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\portable.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\deprecated_definitions.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\portable\GCC\ARM_CM4F\portmacro.h)(0x6A734CF2)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\mpu_wrappers.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\task.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\list.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\queue.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\semphr.h)(0x6A734CF1)
-F (.\switch.h)(0x6A7CC984)()
-F (.\uart.c)(0x6A7CC9D7)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__EVAL -gdwarf-4 -O0 -ffunction-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I C:/ti/TivaWare_C_Series-2.1.4.178 -I C:/ti/TivaWare_C_Series-2.1.4.178/inc-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-D__UVISION_VERSION="541" -DTM4C123GH6PM -D_RTE_ -D__FPU_PRESENT-o ./objects/uart.o -MMD)
-I (uart.h)(0x6A7CC8EE)
-F (.\uart.h)(0x6A7CC8EE)()
-F (.\tasks.c)(0x6A7CCA1A)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__EVAL -gdwarf-4 -O0 -ffunction-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I C:/ti/TivaWare_C_Series-2.1.4.178 -I C:/ti/TivaWare_C_Series-2.1.4.178/inc-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-D__UVISION_VERSION="541" -DTM4C123GH6PM -D_RTE_ -D__FPU_PRESENT-o ./objects/tasks.o -MMD)
-I (tasks.h)(0x6A7CC698)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\FreeRTOS.h)(0x6A734CF1)
-I (RTE\RTOS\FreeRTOSConfig.h)(0x6A7CC2E9)
-I (C:\ti\TivaWare_C_Series-2.1.4.178\inc\tm4c123gh6pm.h)(0x6A7399F0)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\projdefs.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\portable.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\deprecated_definitions.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\portable\GCC\ARM_CM4F\portmacro.h)(0x6A734CF2)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\mpu_wrappers.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\task.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\list.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\queue.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\semphr.h)(0x6A734CF1)
-I (uart.h)(0x6A7CC8EE)
-F (.\tasks.h)(0x6A7CC698)()
-F (RTE/Device/TM4C123GH6PM/startup_TM4C123.s)(0x6A7CC251)(--target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -masm=auto  -Wa,armasm,--diag_suppress=A1950W -c-gdwarf-4 -Wa,armasm,--pd,"__EVAL SETA 1" -I C:/ti/TivaWare_C_Series-2.1.4.178/driverlib/rvmdk-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-Wa,armasm,--pd,"__UVISION_VERSION SETA 541" -Wa,armasm,--pd,"TM4C123GH6PM SETA 1" -Wa,armasm,--pd,"_RTE_ SETA 1"-o ./objects/startup_tm4c123.o)
-F (RTE/Device/TM4C123GH6PM/system_TM4C123.c)(0x6A7CC232)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__EVAL -gdwarf-4 -O0 -ffunction-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I C:/ti/TivaWare_C_Series-2.1.4.178 -I C:/ti/TivaWare_C_Series-2.1.4.178/inc-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-D__UVISION_VERSION="541" -DTM4C123GH6PM -D_RTE_ -D__FPU_PRESENT-o ./objects/system_tm4c123.o -MMD)
-I (C:\Users\feras\AppData\Local\Arm\Packs\Keil\TM4C_DFP\1.1.0\Device\Include\TM4C123\TM4C123.h)(0x6A5BFA1D)
-I (C:\Users\feras\AppData\Local\Arm\Packs\Keil\TM4C_DFP\1.1.0\Device\Include\TM4C123\TM4C123GH6PM.h)(0x6A5BFA1E)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS\6.3.0\CMSIS\Core\Include\core_cm4.h)(0x6A5BFA58)
-I (C:\Users\feras\AppData\Local\Arm\Packs\Keil\TM4C_DFP\1.1.0\Device\Include\TM4C123\system_TM4C123.h)(0x6A5BFA1D)
-F (C:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Source/freertos_evr.c)(0x6A734CF1)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__EVAL -gdwarf-4 -O0 -ffunction-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I C:/ti/TivaWare_C_Series-2.1.4.178 -I C:/ti/TivaWare_C_Series-2.1.4.178/inc-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-D__UVISION_VERSION="541" -DTM4C123GH6PM -D_RTE_ -D__FPU_PRESENT-o ./objects/freertos_evr.o -MMD)
-I (RTE\RTOS\FreeRTOSConfig.h)(0x6A7CC2E9)
-I (C:\ti\TivaWare_C_Series-2.1.4.178\inc\tm4c123gh6pm.h)(0x6A7399F0)
-F (C:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/list.c)(0x6A734CF1)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__EVAL -gdwarf-4 -O0 -ffunction-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I C:/ti/TivaWare_C_Series-2.1.4.178 -I C:/ti/TivaWare_C_Series-2.1.4.178/inc-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-D__UVISION_VERSION="541" -DTM4C123GH6PM -D_RTE_ -D__FPU_PRESENT-o ./objects/list.o -MMD)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\FreeRTOS.h)(0x6A734CF1)
-I (RTE\RTOS\FreeRTOSConfig.h)(0x6A7CC2E9)
-I (C:\ti\TivaWare_C_Series-2.1.4.178\inc\tm4c123gh6pm.h)(0x6A7399F0)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\projdefs.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\portable.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\deprecated_definitions.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\portable\GCC\ARM_CM4F\portmacro.h)(0x6A734CF2)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\mpu_wrappers.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\list.h)(0x6A734CF1)
-F (C:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F/port.c)(0x6A734CF2)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__EVAL -gdwarf-4 -O0 -ffunction-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I C:/ti/TivaWare_C_Series-2.1.4.178 -I C:/ti/TivaWare_C_Series-2.1.4.178/inc-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-D__UVISION_VERSION="541" -DTM4C123GH6PM -D_RTE_ -D__FPU_PRESENT-o ./objects/port.o -MMD)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\FreeRTOS.h)(0x6A734CF1)
-I (RTE\RTOS\FreeRTOSConfig.h)(0x6A7CC2E9)
-I (C:\ti\TivaWare_C_Series-2.1.4.178\inc\tm4c123gh6pm.h)(0x6A7399F0)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\projdefs.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\portable.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\deprecated_definitions.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\portable\GCC\ARM_CM4F\portmacro.h)(0x6A734CF2)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\mpu_wrappers.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\task.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\list.h)(0x6A734CF1)
-F (C:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/MemMang/heap_1.c)(0x6A734CF2)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__EVAL -gdwarf-4 -O0 -ffunction-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I C:/ti/TivaWare_C_Series-2.1.4.178 -I C:/ti/TivaWare_C_Series-2.1.4.178/inc-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-D__UVISION_VERSION="541" -DTM4C123GH6PM -D_RTE_ -D__FPU_PRESENT-o ./objects/heap_1.o -MMD)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\FreeRTOS.h)(0x6A734CF1)
-I (RTE\RTOS\FreeRTOSConfig.h)(0x6A7CC2E9)
-I (C:\ti\TivaWare_C_Series-2.1.4.178\inc\tm4c123gh6pm.h)(0x6A7399F0)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\projdefs.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\portable.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\deprecated_definitions.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\portable\GCC\ARM_CM4F\portmacro.h)(0x6A734CF2)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\mpu_wrappers.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\task.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\list.h)(0x6A734CF1)
-F (C:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/queue.c)(0x6A734CF4)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__EVAL -gdwarf-4 -O0 -ffunction-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I C:/ti/TivaWare_C_Series-2.1.4.178 -I C:/ti/TivaWare_C_Series-2.1.4.178/inc-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-D__UVISION_VERSION="541" -DTM4C123GH6PM -D_RTE_ -D__FPU_PRESENT-o ./objects/queue.o -MMD)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\FreeRTOS.h)(0x6A734CF1)
-I (RTE\RTOS\FreeRTOSConfig.h)(0x6A7CC2E9)
-I (C:\ti\TivaWare_C_Series-2.1.4.178\inc\tm4c123gh6pm.h)(0x6A7399F0)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\projdefs.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\portable.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\deprecated_definitions.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\portable\GCC\ARM_CM4F\portmacro.h)(0x6A734CF2)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\mpu_wrappers.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\task.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\list.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\queue.h)(0x6A734CF1)
-F (C:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/tasks.c)(0x6A734CF4)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__EVAL -gdwarf-4 -O0 -ffunction-sections -Wall -Wextra -Wno-packed -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I C:/ti/TivaWare_C_Series-2.1.4.178 -I C:/ti/TivaWare_C_Series-2.1.4.178/inc-I./RTE/RTOS-I./RTE/_Target_1-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/CMSIS/RTOS2/FreeRTOS/Include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/include-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS-FreeRTOS/11.3.0/Source/portable/GCC/ARM_CM4F-IC:/Users/feras/AppData/Local/Arm/Packs/ARM/CMSIS/6.3.0/CMSIS/Core/Include-IC:/Users/feras/AppData/Local/Arm/Packs/Keil/TM4C_DFP/1.1.0/Device/Include/TM4C123-D__UVISION_VERSION="541" -DTM4C123GH6PM -D_RTE_ -D__FPU_PRESENT-o ./objects/tasks_1.o -MMD)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\FreeRTOS.h)(0x6A734CF1)
-I (RTE\RTOS\FreeRTOSConfig.h)(0x6A7CC2E9)
-I (C:\ti\TivaWare_C_Series-2.1.4.178\inc\tm4c123gh6pm.h)(0x6A7399F0)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\projdefs.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\portable.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\deprecated_definitions.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\portable\GCC\ARM_CM4F\portmacro.h)(0x6A734CF2)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\mpu_wrappers.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\task.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\list.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\timers.h)(0x6A734CF1)
-I (C:\Users\feras\AppData\Local\Arm\Packs\ARM\CMSIS-FreeRTOS\11.3.0\Source\include\stack_macros.h)(0x6A734CF1)
-F (RTE/RTOS/FreeRTOSConfig.h)(0x6A7CC2E9)()
