@@ -8,10 +8,10 @@
 #include "inc/tm4c123gh6pm.h"
 
 /* Pin Bitmasks */
-#define PIN_SW2    (1 << 0) /* PF0 */
-#define PIN_SW1    (1 << 4) /* PF4 */
+#define PIN_SW2    (1 << 0) /* PF0 - Oven Manual Toggle */
+#define PIN_SW1    (1 << 4) /* PF4 - Kitchen Light Manual Toggle */
 #define SWITCH_PINS (PIN_SW1 | PIN_SW2)
-#define PIN_MODE   (1 << 0) /* PB0 */
+#define PIN_MODE   (1 << 0) /* PB0 - Auto/Manual Mode Selector Wire */
 
 void Switch_Init(void)
 {
