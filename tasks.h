@@ -29,8 +29,8 @@
  * --------------------------------------------------------- */
 #define OVEN_SAMPLE_PERIOD_MS        500  /* Task 2 control loop period       */
 #define OVEN_REPORT_EVERY_N_CYCLES   2    /* Telemetry cadence (1 s)          */
-#define OVEN_SETPOINT_TENTHS         300  /* 30.0 C target                    */
-#define OVEN_CRITICAL_TENTHS         400  /* 40.0 C hard cut-off, beats manual*/
+#define OVEN_SETPOINT_TENTHS         280  /* 28.0 C target                    */
+#define OVEN_CRITICAL_TENTHS         300  /* 30.0 C hard cut-off, beats manual*/
 #define OVEN_HYSTERESIS_TENTHS       20   /* 2.0 C band, stops chattering     */
 
 /*

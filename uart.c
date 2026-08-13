@@ -38,6 +38,7 @@ void UART_Init(void)
 
     UART0_CTL_R &= ~0x01;
 
+    /* Configure for 9600 baud rate (Assuming 16 MHz clock) */
     UART0_IBRD_R = 104;
     UART0_FBRD_R = 11;
 

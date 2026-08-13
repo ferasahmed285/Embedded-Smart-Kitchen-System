@@ -34,10 +34,10 @@
 This section defines the physical hardware connections required on the TM4C123 Launchpad for the project.
 
 ### Sensors (Analog Inputs & Simulators)
-* **Ambient Light Sensor (LDR)**: Connect to **PE3 (AIN0)** using a **Voltage Divider** circuit:
-  * Connect **Leg 1** of the LDR to **3.3V (VCC)**.
-  * Connect **Leg 2** of the LDR to both **PE3** AND to one end of a **10kΩ Resistor**.
-  * Connect the other end of the 10kΩ Resistor to **GND**.
+* **Simulated Light Sensor**: Plug a jumper wire from **PE5** to **GND**.
+  * Plugged In (GND) = Dark Room (Light turns ON in Auto)
+  * Unplugged (Floating) = Bright Room (Light turns OFF in Auto)
+  * *(Note: To use a real physical LDR circuit on PE3, swap the commented block in `adc.c`)*
 * **Oven Temperature Sensor**: Utilizes the Tiva C **Internal Temperature Sensor**.
 * **Simulated Disconnect Wire (Fault Testing)**: Plug a jumper wire from **PE1** to **GND**. When you pull this wire out during the video demo, the system will instantly simulate a "disconnected sensor" fault and force the oven off!
 

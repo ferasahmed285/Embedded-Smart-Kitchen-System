@@ -210,6 +210,31 @@ static bool Oven_SwitchIsStuck(void)
     return (burstCount >= OVEN_SWITCH_STUCK_EVENTS);
 }
 
+#define PIN_SW2    (1 << 0) /* PF0 */
+#define PIN_SW1    (1 << 4) /* PF4 */
+
+/*
+ * Double-click software debouncer. 
+ * Enforces a strict 50ms cooldown and rejects release-bounces.
+ */
+static bool Button_IsBouncing(int buttonIndex)
+{
+    static TickType_t lastEventTick[2] = {0, 0};
+    TickType_t now = xTaskGetTickCount();
+
+    if ((now - lastEventTick[buttonIndex]) < pdMS_TO_TICKS(50)) {
+        return true; /* Still bouncing / pressed too fast */
+    }
+
+    /* Reject release-bounces by confirming the button is actually still pressed (LOW) */
+    if (buttonIndex == 0 && (GPIO_PORTF_DATA_R & PIN_SW1)) return true; 
+    if (buttonIndex == 1 && (GPIO_PORTF_DATA_R & PIN_SW2)) return true; 
+
+    lastEventTick[buttonIndex] = now;
+    return false;
+}
+
+
 /* =========================================================
  * TASK: USER OVERRIDE (Task 3)
  * ========================================================= */
@@ -238,7 +263,10 @@ void Tasks_UserOverride(void *pvParameters)
                         }
                     }
                     else if (event == EVENT_TOGGLE_LIGHT) {
-                        if (globalSystemMode == SYSTEM_MODE_MANUAL) {
+                        if (Button_IsBouncing(0)) {
+                            /* Ignore bounce */
+                        }
+                        else if (globalSystemMode == SYSTEM_MODE_MANUAL) {
                             manualLightOn = !manualLightOn;
                             Tasks_LogSend(manualLightOn ? "MANUAL LIGHT: ON" : "MANUAL LIGHT: OFF", 0);
                         } else {
@@ -249,6 +277,9 @@ void Tasks_UserOverride(void *pvParameters)
                         /* Role 2: reject bursts too fast to be a human press. */
                         if (Oven_SwitchIsStuck()) {
                             Tasks_LogSend("FAULT: OVEN OVERRIDE SWITCH BOUNCING - EVENT IGNORED", 0);
+                        }
+                        else if (Button_IsBouncing(1)) {
+                            /* Ignore bounce */
                         }
                         else if (globalSystemMode == SYSTEM_MODE_MANUAL) {
                             manualOvenOn = !manualOvenOn;

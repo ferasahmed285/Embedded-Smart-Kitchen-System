@@ -96,6 +96,13 @@ void ADC_Init(void)
     GPIO_PORTE_PUR_R |= (1 << 1);     /* Enable pull-up resistor on PE1 */
     GPIO_PORTE_DEN_R |= (1 << 1);     /* Enable digital I/O on PE1 */
 
+    /* 2c. Configure PE5 as a digital input with pull-up to mock the LDR */
+    GPIO_PORTE_DIR_R &= ~(1 << 5);    /* PE5 as input */
+    GPIO_PORTE_AFSEL_R &= ~(1 << 5);  /* Disable alt function on PE5 */
+    GPIO_PORTE_AMSEL_R &= ~(1 << 5);  /* Disable analog on PE5 */
+    GPIO_PORTE_PUR_R |= (1 << 5);     /* Enable pull-up resistor on PE5 */
+    GPIO_PORTE_DEN_R |= (1 << 5);     /* Enable digital I/O on PE5 */
+
     /* 3. Disable SS2 and SS3 before config */
     ADC0_ACTSS_R &= ~((1 << 2) | (1 << 3));
     
@@ -115,6 +122,13 @@ void ADC_Init(void)
 }
 
 /* ================= READ LIGHT ================= */
+
+/*
+ * TO USE THE REAL LDR SENSOR: 
+ * Delete the "MOCK SENSOR" function below, and uncomment this real one.
+ * You will need to build a voltage divider with the LDR and a 10k resistor on PE3.
+ */
+#if 0
 uint32_t ADC_ReadLightSensor(void)
 {
     uint32_t result;
@@ -133,6 +147,22 @@ uint32_t ADC_ReadLightSensor(void)
     result = ADC0_SSFIFO2_R & 0xFFF;          /* Read result */
     ADC0_ISC_R = (1 << 2);                    /* Clear flag */
     return result;
+}
+#endif
+
+/*
+ * MOCK SENSOR (ACTIVE): 
+ * Since there is no 10k resistor available, we use a digital jumper wire on PE5.
+ * Connected to GND (LOW) -> Simulates a dark room (returns 3000, avoids fault)
+ * Unplugged (HIGH)       -> Simulates a bright room (returns 500, avoids fault)
+ */
+uint32_t ADC_ReadLightSensor(void)
+{
+    if ((GPIO_PORTE_DATA_R & (1 << 5)) == 0) {
+        return 3000; /* Dark */
+    } else {
+        return 500;  /* Bright */
+    }
 }
 
 /* ================= READ TEMP ================= */
