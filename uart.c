@@ -45,13 +45,6 @@ void UART_Init(void)
     UART0_LCRH_R = 0x60; 
     UART0_CC_R = 0x0;
 
-    /* 
-     * RX Interrupt is commented out. In this RTOS project, we only transmit logs to PuTTY. 
-     * Enabling RX interrupts without a defined UART0_Handler will cause a Hard Fault.
-     */
-    // UART0_IM_R |= 0x10;  
-    // NVIC_EN0_R |= (1 << 5);
-
     UART0_CTL_R = 0x301;
 }
 

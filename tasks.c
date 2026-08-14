@@ -263,14 +263,13 @@ void Tasks_UserOverride(void *pvParameters)
                         }
                     }
                     else if (event == EVENT_TOGGLE_LIGHT) {
-                        if (Button_IsBouncing(0)) {
-                            /* Ignore bounce */
-                        }
-                        else if (globalSystemMode == SYSTEM_MODE_MANUAL) {
-                            manualLightOn = !manualLightOn;
-                            Tasks_LogSend(manualLightOn ? "MANUAL LIGHT: ON" : "MANUAL LIGHT: OFF", 0);
-                        } else {
-                            Tasks_LogSend("REJECTED: CANNOT TOGGLE LIGHT IN AUTO MODE", 0);
+                        if (!Button_IsBouncing(0)) {
+                            if (globalSystemMode == SYSTEM_MODE_MANUAL) {
+                                manualLightOn = !manualLightOn;
+                                Tasks_LogSend(manualLightOn ? "MANUAL LIGHT: ON" : "MANUAL LIGHT: OFF", 0);
+                            } else {
+                                Tasks_LogSend("REJECTED: CANNOT TOGGLE LIGHT IN AUTO MODE", 0);
+                            }
                         }
                     }
                     else if (event == EVENT_TOGGLE_OVEN) {
@@ -278,14 +277,13 @@ void Tasks_UserOverride(void *pvParameters)
                         if (Oven_SwitchIsStuck()) {
                             Tasks_LogSend("FAULT: OVEN OVERRIDE SWITCH BOUNCING - EVENT IGNORED", 0);
                         }
-                        else if (Button_IsBouncing(1)) {
-                            /* Ignore bounce */
-                        }
-                        else if (globalSystemMode == SYSTEM_MODE_MANUAL) {
-                            manualOvenOn = !manualOvenOn;
-                            Tasks_LogSend(manualOvenOn ? "MANUAL OVEN: ON" : "MANUAL OVEN: OFF", 0);
-                        } else {
-                            Tasks_LogSend("REJECTED: CANNOT TOGGLE OVEN IN AUTO MODE", 0);
+                        else if (!Button_IsBouncing(1)) {
+                            if (globalSystemMode == SYSTEM_MODE_MANUAL) {
+                                manualOvenOn = !manualOvenOn;
+                                Tasks_LogSend(manualOvenOn ? "MANUAL OVEN: ON" : "MANUAL OVEN: OFF", 0);
+                            } else {
+                                Tasks_LogSend("REJECTED: CANNOT TOGGLE OVEN IN AUTO MODE", 0);
+                            }
                         }
                     }
                     xSemaphoreGive(xStateMutex);
@@ -323,7 +321,7 @@ void Tasks_UARTLogging(void *pvParameters)
 void Tasks_LightingControl(void *pvParameters) {
     (void)pvParameters;
     bool lightIsOn = false;
-    const uint32_t LIGHT_THRESHOLD = 2000; 
+    const uint32_t LIGHT_THRESHOLD = 3500; 
     
     for(;;) {
         uint32_t lightLevel = ADC_ReadLightSensor();
@@ -335,7 +333,7 @@ void Tasks_LightingControl(void *pvParameters) {
         bool turnOn = false;
         static bool wasInFault = false;
 
-        /* Hardware Fault Detection: If LDR is unplugged, ADC reads ~0 (pulled down by 10k) or ~4095 (short) */
+        /* Hardware Fault Detection: If LDR is unplugged, ADC reads ~0 (pulled down by internal PDR) or ~4095 (short) */
         if (lightLevel > 4090 || lightLevel < 10) {
             if (!wasInFault) {
                 Tasks_LogSend("FAULT: LIGHT SENSOR DISCONNECTED. LIGHT FORCED OFF.", 0);
@@ -351,8 +349,8 @@ void Tasks_LightingControl(void *pvParameters) {
             if (mode == SYSTEM_MODE_MANUAL) {
                 turnOn = lightManual;
             } else {
-                /* AUTO mode: turn on if dark */
-                if (lightLevel > LIGHT_THRESHOLD) {
+                /* AUTO mode: turn on if dark (Low ADC because LDR resistance is high) */
+                if (lightLevel < LIGHT_THRESHOLD) {
                     turnOn = true;
                 } else {
                     turnOn = false;
