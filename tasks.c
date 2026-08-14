@@ -323,6 +323,9 @@ void Tasks_LightingControl(void *pvParameters) {
     bool lightIsOn = false;
     const uint32_t LIGHT_THRESHOLD = 3500; 
     
+    /* Stagger the start time by 100ms so it never reads the ADC at the exact same time as the Oven Task */
+    vTaskDelay(pdMS_TO_TICKS(100));
+
     for(;;) {
         uint32_t lightLevel = ADC_ReadLightSensor();
         SystemMode_t mode;

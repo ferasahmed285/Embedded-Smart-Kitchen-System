@@ -114,6 +114,10 @@ void ADC_Init(void)
     ADC0_SSMUX2_R = 0;               /* Channel 0 (AIN0/PE3) */
     ADC0_SSCTL2_R = (1<<1) | (1<<2); /* IE0, END0 */
 
+    /* ENABLE HARDWARE OVERSAMPLING: 0x06 = 64x Averaging to eliminate crosstalk noise! */
+    #define ADC0_SAC_R (*((volatile unsigned long *)0x40038030))
+    ADC0_SAC_R = 0x06;
+
     /* 7. Re-enable SS2 and SS3 */
     ADC0_ACTSS_R |= (1 << 2) | (1 << 3);
 }
