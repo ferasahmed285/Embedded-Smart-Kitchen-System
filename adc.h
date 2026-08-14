@@ -9,9 +9,6 @@
  */
 #define ADC_TEMP_TENTHS_INVALID  ((int32_t)-30000)
 
-/* Value reported by the legacy float accessor for the same fault condition. */
-#define ADC_TEMP_FAULT_C         999.0f
-
 /* Initializes ADC0 for Software Triggered readings (Tasks 1 & 2) */
 void ADC_Init(void);
 
@@ -25,8 +22,5 @@ uint32_t ADC_ReadLightSensor(void);
  * Returns ADC_TEMP_TENTHS_INVALID on a sensor fault.
  */
 int32_t ADC_ReadTemperatureTenths(void);
-
-/* Legacy floating point accessor. Returns ADC_TEMP_FAULT_C on a fault. */
-float ADC_ReadTemperatureSensor(void);
 
 #endif // ADC_H
